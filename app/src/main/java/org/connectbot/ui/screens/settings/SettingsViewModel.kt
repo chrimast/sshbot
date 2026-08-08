@@ -44,6 +44,8 @@ import org.connectbot.backup.WebDavBackupConfig
 import org.connectbot.backup.WebDavBackupRepository
 import org.connectbot.backup.WebDavBackupResult
 import org.connectbot.backup.WebDavBackupTransport
+import org.connectbot.backup.WebDavSyncPreferences
+import org.connectbot.backup.WebDavSyncScheduler
 import org.connectbot.data.ProfileRepository
 import org.connectbot.data.entity.Profile
 import org.connectbot.di.CoroutineDispatchers
@@ -102,6 +104,7 @@ data class SettingsUiState(
     val webDavPassword: String = "",
     val webDavRemotePath: String = "ConnectBot/latest.cbbackup",
     val webDavEncryptionPassword: String = "",
+    val webDavAutomaticSync: Boolean = false,
     val webDavOperationInProgress: Boolean = false,
     val webDavStatusMessage: String? = null,
 )
@@ -118,6 +121,7 @@ class SettingsViewModel @Inject constructor(
         NoOpBackupCrypto,
         NoOpWebDavTransport,
     ),
+    private val webDavSyncScheduler: WebDavSyncScheduler = NoOpWebDavSyncScheduler,
 ) : ViewModel() {
     private val fontProvider = TerminalFontProvider(context, dispatchers.io)
     private val localFontProvider = LocalFontProvider(context)
@@ -244,6 +248,7 @@ class SettingsViewModel @Inject constructor(
             webDavPassword = prefs.getString(WEB_DAV_PASSWORD, "") ?: "",
             webDavRemotePath = prefs.getString(WEB_DAV_REMOTE_PATH, DEFAULT_WEB_DAV_REMOTE_PATH) ?: DEFAULT_WEB_DAV_REMOTE_PATH,
             webDavEncryptionPassword = prefs.getString(WEB_DAV_ENCRYPTION_PASSWORD, "") ?: "",
+            webDavAutomaticSync = prefs.getBoolean(WebDavSyncPreferences.AUTOMATIC_SYNC_ENABLED, false),
         )
     }
 
@@ -428,6 +433,18 @@ class SettingsViewModel @Inject constructor(
 
     fun runWebDavRestore() {
         runWebDavOperation { config -> webDavBackupRepository.restore(config) }
+    }
+
+    fun updateWebDavAutomaticSync(enabled: Boolean) {
+        updateBooleanPref(WebDavSyncPreferences.AUTOMATIC_SYNC_ENABLED, enabled) {
+            copy(webDavAutomaticSync = enabled, webDavStatusMessage = null)
+        }
+        webDavSyncScheduler.setEnabled(enabled)
+    }
+
+    fun runWebDavSync() {
+        webDavSyncScheduler.syncNow()
+        _uiState.update { it.copy(webDavStatusMessage = "WebDAV sync queued") }
     }
 
     private fun runWebDavOperation(operation: suspend (WebDavBackupConfig) -> WebDavBackupResult) {
@@ -666,4 +683,10 @@ private object NoOpWebDavTransport : WebDavBackupTransport {
     override suspend fun upload(config: WebDavBackupConfig, path: String, bytes: ByteArray) = Unit
 
     override suspend fun download(config: WebDavBackupConfig, path: String): ByteArray = ByteArray(0)
+}
+
+private object NoOpWebDavSyncScheduler : WebDavSyncScheduler {
+    override fun setEnabled(enabled: Boolean) = Unit
+
+    override fun syncNow() = Unit
 }

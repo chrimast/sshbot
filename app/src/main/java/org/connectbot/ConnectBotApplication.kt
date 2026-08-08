@@ -19,6 +19,8 @@ package org.connectbot
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
+import org.connectbot.backup.WebDavSyncPreferences
+import org.connectbot.backup.WebDavSyncScheduler
 import org.connectbot.logging.TimberInitializer
 import javax.inject.Inject
 
@@ -28,8 +30,15 @@ class ConnectBotApplication : Application() {
     @Inject
     lateinit var timberInitializer: TimberInitializer
 
+    @Inject
+    lateinit var webDavSyncPreferences: WebDavSyncPreferences
+
+    @Inject
+    lateinit var webDavSyncScheduler: WebDavSyncScheduler
+
     override fun onCreate() {
         super.onCreate()
         timberInitializer.initialize()
+        webDavSyncScheduler.setEnabled(webDavSyncPreferences.isAutomaticSyncEnabled())
     }
 }

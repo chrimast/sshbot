@@ -27,6 +27,7 @@ import org.connectbot.backup.ConnectBotBackupExporter
 import org.connectbot.backup.WebDavBackupConfig
 import org.connectbot.backup.WebDavBackupRepository
 import org.connectbot.backup.WebDavBackupTransport
+import org.connectbot.backup.WebDavSyncScheduler
 import org.connectbot.data.ProfileRepository
 import org.connectbot.di.CoroutineDispatchers
 import org.connectbot.di.FakeLanguagePackManager
@@ -45,6 +46,7 @@ import org.robolectric.RuntimeEnvironment
 class SettingsViewModelWebDavBackupTest {
     private val testDispatcher = StandardTestDispatcher()
     private val transport = FakeTransport()
+    private val scheduler = FakeSyncScheduler()
     private lateinit var prefs: SharedPreferences
     private lateinit var prefsEditor: SharedPreferences.Editor
     private lateinit var viewModel: SettingsViewModel
@@ -71,6 +73,7 @@ class SettingsViewModelWebDavBackupTest {
             dispatchers = CoroutineDispatchers(testDispatcher, testDispatcher, testDispatcher),
             languagePackManager = FakeLanguagePackManager(),
             webDavBackupRepository = WebDavBackupRepository(FakeExporter(), FakeCrypto(), transport),
+            webDavSyncScheduler = scheduler,
         )
         advanceUntilIdle()
     }
@@ -90,6 +93,23 @@ class SettingsViewModelWebDavBackupTest {
         assertEquals("ConnectBot/latest.cbbackup", transport.uploadPath)
         assertEquals("encrypted", transport.uploadBytes?.toString(Charsets.UTF_8))
         assertEquals("WebDAV backup operation completed", viewModel.uiState.value.webDavStatusMessage)
+    }
+
+    @Test
+    fun automaticSyncTogglePersistsAndSchedules() = runTest(testDispatcher) {
+        viewModel.updateWebDavAutomaticSync(true)
+        advanceUntilIdle()
+
+        assertEquals(true, viewModel.uiState.value.webDavAutomaticSync)
+        assertEquals(true, scheduler.enabled)
+    }
+
+    @Test
+    fun syncNowEnqueuesImmediateSync() = runTest(testDispatcher) {
+        viewModel.runWebDavSync()
+
+        assertEquals(1, scheduler.immediateRuns)
+        assertEquals("WebDAV sync queued", viewModel.uiState.value.webDavStatusMessage)
     }
 
     private class FakeExporter : ConnectBotBackupExporter {
@@ -114,5 +134,18 @@ class SettingsViewModelWebDavBackupTest {
         }
 
         override suspend fun download(config: WebDavBackupConfig, path: String): ByteArray = ByteArray(0)
+    }
+
+    private class FakeSyncScheduler : WebDavSyncScheduler {
+        var enabled: Boolean? = null
+        var immediateRuns = 0
+
+        override fun setEnabled(enabled: Boolean) {
+            this.enabled = enabled
+        }
+
+        override fun syncNow() {
+            immediateRuns++
+        }
     }
 }

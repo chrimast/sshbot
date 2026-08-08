@@ -86,6 +86,15 @@ class WebDavClientTest {
         }
     }
 
+    @Test
+    fun createOnlyUploadUsesIfNoneMatchWildcard() = runBlocking {
+        val client = WebDavClient(baseUrl = baseUrl, username = "", password = "")
+
+        client.uploadConditional("sync.json", "payload".toByteArray(), ifMatch = null, createOnly = true)
+
+        assertEquals("*", requests.single().ifNoneMatch)
+    }
+
     private fun handle(exchange: HttpExchange) {
         val body = exchange.requestBody.readBytes()
         val path = exchange.requestURI.rawPath
@@ -94,6 +103,7 @@ class WebDavClientTest {
                 method = exchange.requestMethod,
                 path = path,
                 authorization = exchange.requestHeaders.getFirst("Authorization"),
+                ifNoneMatch = exchange.requestHeaders.getFirst("If-None-Match"),
                 body = body,
             ),
         )
@@ -128,6 +138,7 @@ class WebDavClientTest {
         val method: String,
         val path: String,
         val authorization: String?,
+        val ifNoneMatch: String?,
         val body: ByteArray,
     )
 }

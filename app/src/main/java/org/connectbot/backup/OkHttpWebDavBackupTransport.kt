@@ -42,4 +42,28 @@ class OkHttpWebDavBackupTransport(
         httpClient = httpClient,
         ioDispatcher = ioDispatcher,
     ).download(path)
+
+    override suspend fun uploadConditional(
+        config: WebDavBackupConfig,
+        path: String,
+        bytes: ByteArray,
+        ifMatch: String?,
+        createOnly: Boolean,
+    ) {
+        WebDavClient(
+            baseUrl = config.baseUrl,
+            username = config.username,
+            password = config.password,
+            httpClient = httpClient,
+            ioDispatcher = ioDispatcher,
+        ).uploadConditional(path, bytes, ifMatch, createOnly)
+    }
+
+    override suspend fun downloadVersioned(config: WebDavBackupConfig, path: String): WebDavRemoteFile = WebDavClient(
+        baseUrl = config.baseUrl,
+        username = config.username,
+        password = config.password,
+        httpClient = httpClient,
+        ioDispatcher = ioDispatcher,
+    ).downloadVersioned(path)
 }

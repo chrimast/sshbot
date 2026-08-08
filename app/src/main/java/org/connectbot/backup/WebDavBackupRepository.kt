@@ -30,7 +30,20 @@ interface BackupCryptoEngine {
 interface WebDavBackupTransport {
     suspend fun upload(config: WebDavBackupConfig, path: String, bytes: ByteArray)
     suspend fun download(config: WebDavBackupConfig, path: String): ByteArray
+
+    suspend fun uploadConditional(
+        config: WebDavBackupConfig,
+        path: String,
+        bytes: ByteArray,
+        ifMatch: String?,
+        createOnly: Boolean = false,
+    ) = upload(config, path, bytes)
+
+    suspend fun downloadVersioned(config: WebDavBackupConfig, path: String): WebDavRemoteFile =
+        WebDavRemoteFile(download(config, path), null)
 }
+
+data class WebDavRemoteFile(val bytes: ByteArray, val etag: String?)
 
 data class WebDavBackupConfig(
     val baseUrl: String,

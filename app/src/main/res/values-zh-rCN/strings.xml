@@ -594,6 +594,9 @@
   <string name="pref_webdav_encryption_password_title">备份加密密码</string>
   <string name="pref_webdav_backup_now">立即备份</string>
   <string name="pref_webdav_restore_now">立即恢复</string>
+  <string name="pref_webdav_auto_sync_title">自动同步</string>
+  <string name="pref_webdav_auto_sync_summary">联网时每 12 小时同步一次</string>
+  <string name="pref_webdav_sync_now">立即同步</string>
 
   <!-- Country/Region identifiers -->
   <string name="country_cn">中国</string>

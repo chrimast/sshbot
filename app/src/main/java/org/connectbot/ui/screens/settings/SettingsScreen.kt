@@ -221,6 +221,8 @@ fun SettingsScreen(
         onWebDavPasswordChange = viewModel::updateWebDavPassword,
         onWebDavRemotePathChange = viewModel::updateWebDavRemotePath,
         onWebDavEncryptionPasswordChange = viewModel::updateWebDavEncryptionPassword,
+        onWebDavAutomaticSyncChange = viewModel::updateWebDavAutomaticSync,
+        onRunWebDavSync = viewModel::runWebDavSync,
         onRunWebDavBackup = viewModel::runWebDavBackup,
         onRunWebDavRestore = viewModel::runWebDavRestore,
         modifier = modifier,
@@ -273,6 +275,8 @@ fun SettingsScreenContent(
     onWebDavPasswordChange: (String) -> Unit,
     onWebDavRemotePathChange: (String) -> Unit,
     onWebDavEncryptionPasswordChange: (String) -> Unit,
+    onWebDavAutomaticSyncChange: (Boolean) -> Unit = {},
+    onRunWebDavSync: () -> Unit = {},
     onRunWebDavBackup: () -> Unit,
     onRunWebDavRestore: () -> Unit,
     modifier: Modifier = Modifier,
@@ -406,6 +410,8 @@ fun SettingsScreenContent(
                         onPasswordChange = onWebDavPasswordChange,
                         onRemotePathChange = onWebDavRemotePathChange,
                         onEncryptionPasswordChange = onWebDavEncryptionPasswordChange,
+                        onAutomaticSyncChange = onWebDavAutomaticSyncChange,
+                        onSync = onRunWebDavSync,
                         onBackup = onRunWebDavBackup,
                         onRestore = onRunWebDavRestore,
                     )
@@ -839,6 +845,8 @@ private fun WebDavBackupPreference(
     onPasswordChange: (String) -> Unit,
     onRemotePathChange: (String) -> Unit,
     onEncryptionPasswordChange: (String) -> Unit,
+    onAutomaticSyncChange: (Boolean) -> Unit,
+    onSync: () -> Unit,
     onBackup: () -> Unit,
     onRestore: () -> Unit,
     modifier: Modifier = Modifier,
@@ -885,7 +893,20 @@ private fun WebDavBackupPreference(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
             )
+            SwitchPreference(
+                title = stringResource(R.string.pref_webdav_auto_sync_title),
+                summary = stringResource(R.string.pref_webdav_auto_sync_summary),
+                checked = uiState.webDavAutomaticSync,
+                onCheckedChange = onAutomaticSyncChange,
+            )
             Row(modifier = Modifier.padding(top = 4.dp)) {
+                Button(
+                    onClick = onSync,
+                    enabled = !uiState.webDavOperationInProgress,
+                ) {
+                    Text(stringResource(R.string.pref_webdav_sync_now))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
                 Button(
                     onClick = onBackup,
                     enabled = !uiState.webDavOperationInProgress,

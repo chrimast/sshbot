@@ -1,6 +1,6 @@
 /*
  * ConnectBot: simple, powerful, open-source SSH client for Android
- * Copyright 2025 Kenny Root
+ * Copyright 2025-2026 Kenny Root
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,10 @@ import org.connectbot.data.entity.KnownHost
 import org.connectbot.data.entity.PortForward
 import org.connectbot.data.entity.Profile
 import org.connectbot.data.entity.Pubkey
+import org.connectbot.data.sync.SyncIdentityMapping
+import org.connectbot.data.sync.SyncIdentityMappingDao
+import org.connectbot.data.sync.SyncBaseline
+import org.connectbot.data.sync.SyncBaselineDao
 
 /**
  * ConnectBot Room database.
@@ -72,8 +76,10 @@ import org.connectbot.data.entity.Pubkey
         ColorScheme::class,
         ColorPalette::class,
         Profile::class,
+        SyncIdentityMapping::class,
+        SyncBaseline::class,
     ],
-    version = 8,
+    version = 10,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -82,6 +88,8 @@ import org.connectbot.data.entity.Pubkey
         AutoMigration(from = 5, to = 6),
         AutoMigration(from = 6, to = 7),
         AutoMigration(from = 7, to = 8),
+        AutoMigration(from = 8, to = 9),
+        AutoMigration(from = 9, to = 10),
     ],
 )
 @TypeConverters(Converters::class)
@@ -92,6 +100,8 @@ abstract class ConnectBotDatabase : RoomDatabase() {
     abstract fun knownHostDao(): KnownHostDao
     abstract fun colorSchemeDao(): ColorSchemeDao
     abstract fun profileDao(): ProfileDao
+    abstract fun syncIdentityMappingDao(): SyncIdentityMappingDao
+    abstract fun syncBaselineDao(): SyncBaselineDao
 
     companion object {
         /**

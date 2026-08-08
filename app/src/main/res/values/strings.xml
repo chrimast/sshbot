@@ -59,6 +59,9 @@
 	<string name="pref_webdav_backup_now">Back up now</string>
 	<!-- Button text to download and restore an encrypted WebDAV backup immediately. -->
 	<string name="pref_webdav_restore_now">Restore now</string>
+	<string name="pref_webdav_auto_sync_title">Automatic sync</string>
+	<string name="pref_webdav_auto_sync_summary">Sync every 12 hours when connected</string>
+	<string name="pref_webdav_sync_now">Sync now</string>
 	<!-- Window title when generating a new pubkey. -->
 	<string name="title_pubkey_generate">Generate</string>
 

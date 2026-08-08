@@ -436,6 +436,7 @@ dependencies {
 
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.core)
+    implementation(libs.androidx.work.runtime)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
@@ -464,6 +465,7 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.room.testing)
+    testImplementation(libs.androidx.work.testing)
 
     testCompileOnly(libs.conscrypt.openjdk.uber)
     testRuntimeOnly(libs.conscrypt.android)

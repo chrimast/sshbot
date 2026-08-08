@@ -44,12 +44,41 @@ class WebDavClient(
         }
     }
 
+    suspend fun uploadConditional(
+        path: String,
+        bytes: ByteArray,
+        ifMatch: String?,
+        createOnly: Boolean = false,
+    ) = withContext(ioDispatcher) {
+        val normalizedPath = normalizeRemotePath(path)
+        createParentDirectories(normalizedPath)
+        val headers = when {
+            createOnly -> mapOf("If-None-Match" to "*")
+            ifMatch != null -> mapOf("If-Match" to ifMatch)
+            else -> emptyMap()
+        }
+        execute("PUT", normalizedPath, bytes, headers).use { response ->
+            if (!response.isSuccessful) {
+                throw WebDavException("WebDAV conditional upload failed", response.code)
+            }
+        }
+    }
+
     suspend fun download(path: String): ByteArray = withContext(ioDispatcher) {
         execute("GET", normalizeRemotePath(path)).use { response ->
             if (!response.isSuccessful) {
                 throw WebDavException("WebDAV download failed", response.code)
             }
             response.body?.bytes() ?: ByteArray(0)
+        }
+    }
+
+    suspend fun downloadVersioned(path: String): WebDavRemoteFile = withContext(ioDispatcher) {
+        execute("GET", normalizeRemotePath(path)).use { response ->
+            if (!response.isSuccessful) {
+                throw WebDavException("WebDAV download failed", response.code)
+            }
+            WebDavRemoteFile(response.body?.bytes() ?: ByteArray(0), response.header("ETag"))
         }
     }
 
@@ -66,13 +95,18 @@ class WebDavClient(
         }
     }
 
-    private fun execute(method: String, path: String, body: ByteArray? = null): okhttp3.Response {
+    private fun execute(
+        method: String,
+        path: String,
+        body: ByteArray? = null,
+        headers: Map<String, String> = emptyMap(),
+    ): okhttp3.Response {
         val requestBody = body?.toRequestBody("application/octet-stream".toMediaType())
-        val request = Request.Builder()
+        val requestBuilder = Request.Builder()
             .url(baseUrl.ensureTrailingSlash() + normalizeRemotePath(path))
             .header("Authorization", Credentials.basic(username, password))
-            .method(method, requestBody)
-            .build()
+        headers.forEach(requestBuilder::header)
+        val request = requestBuilder.method(method, requestBody).build()
 
         try {
             return httpClient.newCall(request).execute()

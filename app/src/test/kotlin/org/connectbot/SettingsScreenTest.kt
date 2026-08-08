@@ -99,6 +99,12 @@ class SettingsScreenTest {
         }
 
         composeTestRule
+            .onNodeWithText(composeTestRule.activity.getString(R.string.pref_security_category))
+            .performClick()
+        composeTestRule
+            .onNode(hasScrollAction())
+            .performScrollToNode(hasText(connPersistTitle))
+        composeTestRule
             .onNodeWithText(connPersistTitle)
             .assertIsDisplayed()
     }
@@ -132,7 +138,7 @@ class SettingsScreenTest {
 
         composeTestRule
             .onNodeWithText(security)
-            .assertIsDisplayed()
+            .performClick()
         composeTestRule
             .onNodeWithText(authOnLaunch)
             .assertIsDisplayed()
@@ -166,6 +172,9 @@ class SettingsScreenTest {
         )
 
         composeTestRule
+            .onNodeWithText(composeTestRule.activity.getString(R.string.pref_emulation_category))
+            .performClick()
+        composeTestRule
             .onNode(hasScrollAction())
             .performScrollToNode(hasText(scrollback))
         composeTestRule
@@ -194,6 +203,9 @@ class SettingsScreenTest {
             onRemoveCustomTerminalType = { removedTerminalType = it },
         )
 
+        composeTestRule
+            .onNodeWithText(composeTestRule.activity.getString(R.string.pref_emulation_category))
+            .performClick()
         composeTestRule
             .onNode(hasScrollAction())
             .performScrollToNode(hasText(customTerminal))
@@ -234,6 +246,9 @@ class SettingsScreenTest {
             onDefaultProfileChange = { selectedProfileId = it },
         )
 
+        composeTestRule
+            .onNodeWithText(composeTestRule.activity.getString(R.string.pref_profiles_category))
+            .performClick()
         composeTestRule
             .onNode(hasScrollAction())
             .performScrollToNode(hasText(defaultProfile))
