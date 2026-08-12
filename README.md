@@ -1,6 +1,6 @@
-[![Build Status](https://github.com/connectbot/connectbot/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/connectbot/connectbot/actions/workflows/ci.yml)
+[![Build Status](https://github.com/chrimast/sshbot/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/chrimast/sshbot/actions/workflows/ci.yml)
 
-# ConnectBot
+# SSHbot
 
 ConnectBot is a [Secure Shell](https://en.wikipedia.org/wiki/Secure_Shell)
 client for Android that lets you connect to remote servers over a
@@ -25,8 +25,8 @@ key rotation that upgrades the package signature to a more secure algorithm).
 
 ### Download a release
 
-ConnectBot can be downloaded from [releases](
-https://github.com/connectbot/connectbot/releases) on GitHub. There are
+SSHbot can be downloaded from [releases](
+https://github.com/chrimast/sshbot/releases) on GitHub. There are
 two versions:
 
 -  `google` &mdash; for a version that uses Google Play Services
@@ -66,7 +66,7 @@ you can invoke the Gradle wrapper to build:
 
 ### Continuous Integration
 
-ConnectBot uses [GitHub Actions](https://github.com/connectbot/connectbot/actions)
+SSHbot uses [GitHub Actions](https://github.com/chrimast/sshbot/actions)
 for continuous integration. The workflow is defined in
 `.github/workflows/ci.yml`.
 
