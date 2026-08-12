@@ -1336,7 +1336,7 @@
 	<!-- Label for the GitHub repository link in the Help screen. -->
 	<string name="help_github">Source Code</string>
 	<!-- URL for the ConnectBot GitHub repository. -->
-	<string name="help_github_url" translatable="false">https://github.com/connectbot/connectbot</string>
+	<string name="help_github_url" translatable="false">https://github.com/chrimast/sshbot</string>
 	<!-- Label for the bug report/issue tracker link in the Help screen. -->
 	<string name="help_report_bug">Report a Bug</string>
 	<!-- URL for the ConnectBot issue tracker. -->
