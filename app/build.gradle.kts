@@ -17,7 +17,9 @@ appVersioning {
     tagFilter.set("v[0-9].*")
     overrideVersionCode { gitTag, _, _ ->
         val semVer = gitTag.toSemVer()
-        semVer.major * 10000000 + semVer.minor * 100000 + semVer.patch * 1000 + gitTag.commitsSinceLatestTag
+        val releaseRevision = Regex("-(\\d+)$").find(gitTag.rawTagName)?.groupValues?.get(1)?.toInt() ?: 0
+        semVer.major * 10000000 + semVer.minor * 100000 + semVer.patch * 1000 +
+            maxOf(releaseRevision, gitTag.commitsSinceLatestTag)
     }
     overrideVersionName { gitTag, _, _ ->
         if (gitTag.commitsSinceLatestTag != 0) {
