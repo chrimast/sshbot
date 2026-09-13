@@ -1,6 +1,6 @@
 /*
  * ConnectBot: simple, powerful, open-source SSH client for Android
- * Copyright 2025 Kenny Root
+ * Copyright 2025-2026 Kenny Root
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,10 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.UserNotAuthenticatedException
+import androidx.annotation.MainThread
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.trilead.ssh2.crypto.PublicKeyUtils
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -50,6 +54,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.connectbot.R
 import org.connectbot.data.ColorSchemeRepository
 import org.connectbot.data.HostRepository
@@ -169,8 +174,57 @@ class TerminalManager :
 
     private var wantBellVibration = false
 
+    // Accessed on the main thread. The owner prevents a departing console from
+    // clearing a newer console's registration during navigation.
+    private var visibleConsoleOwner: Any? = null
+    private var visibleBridge: TerminalBridge? = null
+
+    @MainThread
+    fun setVisibleConsole(owner: Any, bridge: TerminalBridge?) {
+        visibleConsoleOwner = owner
+        visibleBridge = bridge
+    }
+
+    @MainThread
+    fun clearVisibleConsole(owner: Any) {
+        if (visibleConsoleOwner === owner) {
+            visibleConsoleOwner = null
+            visibleBridge = null
+        }
+    }
+
+    /** Route each bell once, using the originating bridge and the visible console. */
+    fun onBell(bridge: TerminalBridge) {
+        scope.launch(dispatchers.main) {
+            if (isUiVisible && visibleBridge === bridge) {
+                playBeep()
+            } else {
+                withContext(dispatchers.io) {
+                    sendActivityNotification(bridge.host)
+                }
+            }
+        }
+    }
+
+    /**
+     * Whether our UI is currently visible to the user, i.e. an activity of this
+     * process is started. Tracked through [ProcessLifecycleOwner] rather than
+     * service binding, because the UI stays bound while the app is in the
+     * background or the screen is off.
+     */
     @Volatile
-    private var isUiBound = false
+    var isUiVisible = false
+        private set
+
+    private val uiVisibilityObserver = object : DefaultLifecycleObserver {
+        override fun onStart(owner: LifecycleOwner) {
+            isUiVisible = true
+        }
+
+        override fun onStop(owner: LifecycleOwner) {
+            isUiVisible = false
+        }
+    }
 
     private var resizeAllowed = true
 
@@ -187,6 +241,7 @@ class TerminalManager :
         Timber.i("Starting service")
 
         prefs.registerOnSharedPreferenceChangeListener(this)
+        ProcessLifecycleOwner.get().lifecycle.addObserver(uiVisibilityObserver)
 
         res = resources
 
@@ -261,6 +316,8 @@ class TerminalManager :
 
     override fun onDestroy() {
         Timber.i("Destroying service")
+
+        ProcessLifecycleOwner.get().lifecycle.removeObserver(uiVisibilityObserver)
 
         scope.cancel()
 
@@ -734,7 +791,6 @@ class TerminalManager :
 
     override fun onBind(intent: Intent): IBinder {
         Timber.i("Someone bound to TerminalManager with %s bridges active", bridgesFlow.value.size)
-        isUiBound = true
         keepServiceAlive()
         setResizeAllowed(true)
         return binder
@@ -762,7 +818,6 @@ class TerminalManager :
             "Someone rebound to TerminalManager with %d bridges active",
             bridgesFlow.value.size,
         )
-        isUiBound = true
         keepServiceAlive()
         setResizeAllowed(true)
     }
@@ -773,7 +828,6 @@ class TerminalManager :
             bridgesFlow.value.size,
         )
 
-        isUiBound = false
         setResizeAllowed(true)
 
         if (bridgesFlow.value.isEmpty()) {
@@ -857,14 +911,16 @@ class TerminalManager :
     }
 
     /**
-     * Send system notification to user for a certain host. When user selects
-     * the notification, it will bring them directly to the ConsoleActivity
-     * displaying the host.
+     * Send system notification to user for a certain host, if the user has
+     * enabled bell notifications. Callers use this for bells the user cannot
+     * see: the UI is not visible ([isUiVisible]), or another host's console is
+     * being shown. When user selects the notification, it will bring them
+     * directly to the console displaying the host.
      *
      * @param host
      */
     fun sendActivityNotification(host: Host) {
-        if (!isUiBound && prefs.getBoolean(PreferenceConstants.BELL_NOTIFICATION, false)) {
+        if (prefs.getBoolean(PreferenceConstants.BELL_NOTIFICATION, false)) {
             connectionNotifier.showActivityNotification(this, host)
         }
     }

@@ -188,9 +188,6 @@ class TerminalBridge {
      */
     var onTextInputRequest: (() -> Unit)? = null
 
-    private val _bellEvents = MutableSharedFlow<Unit>(replay = 0, extraBufferCapacity = 10)
-    val bellEvents: SharedFlow<Unit> = _bellEvents.asSharedFlow()
-
     private val _networkStatusMessages = MutableSharedFlow<String>(replay = 0, extraBufferCapacity = 10)
     val networkStatusMessages: SharedFlow<String> = _networkStatusMessages.asSharedFlow()
 
@@ -314,10 +311,7 @@ class TerminalBridge {
                 transportOperations.trySend(TransportOperation.WriteData(data))
             },
             onBell = {
-                scope.launch {
-                    _bellEvents.emit(Unit)
-                }
-                manager.sendActivityNotification(host)
+                manager.onBell(this)
             },
             onResize = {
                 transportOperations.trySend(
