@@ -49,6 +49,7 @@ import org.connectbot.backup.WebDavSyncScheduler
 import org.connectbot.data.ProfileRepository
 import org.connectbot.data.entity.Profile
 import org.connectbot.di.CoroutineDispatchers
+import org.connectbot.terminal.ImeShortcutInputMode
 import org.connectbot.util.LanguageDownloadState
 import org.connectbot.util.LanguagePackManager
 import org.connectbot.util.LocalFontProvider
@@ -75,6 +76,7 @@ data class SettingsUiState(
     val keepalive: Boolean = true,
     val alwaysvisible: Boolean = false,
     val imeTogglekey: Boolean = true,
+    val imeShortcutInputMode: ImeShortcutInputMode = ImeShortcutInputMode.FORCE_ASCII,
     val shiftfkeys: Boolean = false,
     val ctrlfkeys: Boolean = false,
     val stickymodifiers: String = "no",
@@ -228,6 +230,7 @@ class SettingsViewModel @Inject constructor(
             keepalive = prefs.getBoolean("keepalive", true),
             alwaysvisible = prefs.getBoolean("alwaysvisible", false),
             imeTogglekey = prefs.getBoolean(PreferenceConstants.IME_TOGGLE_KEY, true),
+            imeShortcutInputMode = prefs.getImeShortcutInputMode(),
             shiftfkeys = prefs.getBoolean("shiftfkeys", false),
             ctrlfkeys = prefs.getBoolean("ctrlfkeys", false),
             stickymodifiers = prefs.getString("stickymodifiers", "no") ?: "no",
@@ -361,6 +364,12 @@ class SettingsViewModel @Inject constructor(
 
     fun updateImeToggleKey(value: Boolean) {
         updateBooleanPref(PreferenceConstants.IME_TOGGLE_KEY, value) { copy(imeTogglekey = value) }
+    }
+
+    fun updateImeShortcutInputMode(value: ImeShortcutInputMode) {
+        updateStringPref(PreferenceConstants.IME_SHORTCUT_INPUT_MODE, value.name) {
+            copy(imeShortcutInputMode = value)
+        }
     }
 
     fun updateShiftFkeys(value: Boolean) {
@@ -695,4 +704,13 @@ private object NoOpWebDavSyncScheduler : WebDavSyncScheduler {
     override fun setEnabled(enabled: Boolean) = Unit
 
     override fun syncNow() = Unit
+}
+
+private fun SharedPreferences.getImeShortcutInputMode(): ImeShortcutInputMode {
+    val storedMode = getString(
+        PreferenceConstants.IME_SHORTCUT_INPUT_MODE,
+        ImeShortcutInputMode.FORCE_ASCII.name,
+    )
+    return ImeShortcutInputMode.entries.firstOrNull { it.name == storedMode }
+        ?: ImeShortcutInputMode.FORCE_ASCII
 }

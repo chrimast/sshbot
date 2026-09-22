@@ -213,6 +213,14 @@ fun ProfileEditorScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                InlineImagesSelector(
+                    inlineImages = uiState.inlineImages,
+                    onSelectInlineImages = viewModel::updateInlineImages,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 EncodingSelector(
                     encoding = uiState.encoding,
                     commonEncodings = viewModel.commonEncodings,
@@ -459,6 +467,64 @@ private fun DelKeySelector(
                     )
                 }
             }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun InlineImagesSelector(
+    inlineImages: String,
+    onSelectInlineImages: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val options = mapOf(
+        "off" to stringResource(R.string.inline_images_off),
+        "ask" to stringResource(R.string.inline_images_ask),
+        "on" to stringResource(R.string.inline_images_on),
+    )
+
+    Column(modifier = modifier) {
+        Text(
+            text = stringResource(R.string.profile_inline_images),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = it },
+        ) {
+            OutlinedTextField(
+                value = options[inlineImages] ?: options.getValue("ask"),
+                onValueChange = {},
+                readOnly = true,
+                singleLine = true,
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                },
+                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                modifier = Modifier
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth(),
+            )
+
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+            ) {
+                options.forEach { (option, label) ->
+                    DropdownMenuItem(
+                        text = { Text(label) },
+                        onClick = {
+                            onSelectInlineImages(option)
+                            expanded = false
+                        },
+                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                    )
+                }
+            }
+        }
     }
 }
 

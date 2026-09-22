@@ -61,6 +61,8 @@ import org.connectbot.data.sync.SyncBaselineDao
  * - Version 5: Added profiles table and profile_id column to hosts (manual migration)
  * - Version 6: Added force_size_rows and force_size_columns to profiles (AutoMigration)
  * - Version 7: Added ip_version column to hosts for IP version preference (AutoMigration)
+ * - Version 8: Added source_addr to port forwards, defaulting to localhost (AutoMigration)
+ * - Version 9: Added inline_images to profiles, defaulting to Ask (AutoMigration)
  * - Future versions: Use Room AutoMigration when possible for simple schema changes
  *
  * Security Considerations:
