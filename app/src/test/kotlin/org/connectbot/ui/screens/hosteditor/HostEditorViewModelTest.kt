@@ -107,6 +107,19 @@ class HostEditorViewModelTest {
     }
 
     @Test
+    fun saveFailureKeepsUnsavedChanges() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.updateHostname("example.com")
+        `when`(repository.saveHost(any(Host::class.java) ?: Host())).thenThrow(IllegalStateException("disk failed"))
+
+        assertFalse(viewModel.saveHost(useExpandedMode = true))
+        assertTrue(viewModel.uiState.value.hasUnsavedChanges)
+        assertEquals("disk failed", viewModel.uiState.value.error)
+        assertFalse(viewModel.uiState.value.isSaving)
+    }
+
+    @Test
     fun testLoadExistingHost_populatesFields() = runTest {
         val hostId = 42L
         val existingHost = Host(
@@ -307,6 +320,34 @@ class HostEditorViewModelTest {
         assertEquals(2222, savedHost.port)
         assertEquals("new-user", savedHost.username)
         assertEquals("new-user@10.0.0.2:2222", savedHost.nickname) // Sync updated nickname
+    }
+
+    @Test
+    fun testSaveHost_completesBeforeReturning() = runTest {
+        val hostId = 42L
+        val existingHost = Host(
+            id = hostId,
+            nickname = "test-user@10.0.0.1:555",
+            protocol = "ssh",
+            username = "test-user",
+            hostname = "10.0.0.1",
+            port = 555,
+        )
+        `when`(repository.findHostById(hostId)).thenReturn(existingHost)
+        `when`(securePasswordStorage.hasPassword(hostId)).thenReturn(false)
+        `when`(repository.saveHost(any(Host::class.java) ?: Host())).thenAnswer { invocation ->
+            invocation.arguments[0] as Host
+        }
+
+        val viewModel = createViewModel(hostId)
+        advanceUntilIdle()
+
+        viewModel.updatePort("4022")
+        viewModel.saveHost(useExpandedMode = true)
+
+        val hostCaptor = ArgumentCaptor.forClass(Host::class.java)
+        verify(repository).saveHost(hostCaptor.capture() ?: Host())
+        assertEquals(4022, hostCaptor.value.port)
     }
 
     @Test

@@ -46,15 +46,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,6 +69,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import kotlinx.coroutines.launch
 import org.connectbot.BuildConfig
 import org.connectbot.R
 import org.connectbot.data.entity.ColorScheme
@@ -146,15 +151,26 @@ fun HostEditorScreenContent(
     onIpVersionChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onClearPassword: () -> Unit,
-    onSaveHost: (Boolean) -> Unit,
+    onSaveHost: suspend (Boolean) -> Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val coroutineScope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let { snackbarHostState.showSnackbar(it, withDismissAction = true) }
+    }
     var showProtocolMenu by remember { mutableStateOf(false) }
     var expandedMode = true
     var showAdvanced by remember { mutableStateOf(false) }
     val protocols = listOf("ssh", "telnet", "local")
+    val canSave = if (expandedMode) {
+        uiState.protocol == "local" || uiState.hostname.isNotBlank()
+    } else {
+        uiState.quickConnect.isNotBlank()
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -175,10 +191,18 @@ fun HostEditorScreenContent(
                         )
                     }
                 },
-                actions = {
-                    TextButton(
-                        onClick = {
-                            onSaveHost(expandedMode)
+            )
+        },
+        floatingActionButton = {
+            SaveEditorFab(
+                visible = uiState.hasUnsavedChanges && canSave,
+                isSaving = uiState.isSaving,
+                contentDescription = stringResource(
+                    if (hostId == -1L) R.string.hostpref_add_host else R.string.hostpref_save_host,
+                ),
+                onClick = {
+                    coroutineScope.launch {
+                        if (onSaveHost(expandedMode)) {
                             onNavigateBack()
                         },
                         modifier = Modifier.testTag("add_host_button"),
@@ -187,6 +211,7 @@ fun HostEditorScreenContent(
                         Text(stringResource(if (hostId == -1L) R.string.hostpref_add_host else R.string.hostpref_save_host))
                     }
                 },
+                modifier = Modifier.testTag("add_host_button"),
             )
         },
         modifier = modifier,
@@ -1228,7 +1253,7 @@ private fun HostEditorScreenPreview() {
             onIpVersionChange = {},
             onPasswordChange = {},
             onClearPassword = {},
-            onSaveHost = {},
+            onSaveHost = { true },
         )
     }
 }

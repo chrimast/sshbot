@@ -77,6 +77,7 @@ import org.connectbot.ui.PreviewScreen
 import org.connectbot.ui.common.InputFieldShape
 import org.connectbot.ui.components.ColorPickerDialog
 import org.connectbot.ui.components.RgbColorPickerDialog
+import org.connectbot.ui.components.SaveEditorFab
 
 /**
  * Screen for editing the full 256-color palette of a color scheme.
@@ -115,7 +116,7 @@ fun PaletteEditorScreen(
         onUpdateBackgroundColor = viewModel::updateBackgroundColor,
         onUpdateName = viewModel::updateName,
         onUpdateDescription = viewModel::updateDescription,
-        onSaveNameAndDescription = viewModel::saveNameAndDescription,
+        onSaveNameAndDescription = { viewModel.saveNameAndDescription(onNavigateBack) },
         onShowDuplicateDialog = viewModel::showDuplicateDialog,
         onHideDuplicateDialog = viewModel::hideDuplicateDialog,
         onDuplicateScheme = viewModel::duplicateScheme,
@@ -164,6 +165,14 @@ fun PaletteEditorScreenContent(
     Scaffold(
         modifier = modifier,
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            SaveEditorFab(
+                visible = !uiState.isLoading && !uiState.isBuiltIn && uiState.hasUnsavedMetadata && uiState.schemeName.isNotBlank(),
+                isSaving = uiState.isSavingMetadata,
+                contentDescription = stringResource(R.string.portforward_save),
+                onClick = onSaveNameAndDescription,
+            )
+        },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.title_palette_editor), style = MaterialTheme.typography.titleMedium) },
@@ -354,7 +363,6 @@ private fun SchemeInfoSection(
                 label = { Text(stringResource(R.string.label_scheme_name)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = { onSave() }),
                 modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
