@@ -52,7 +52,8 @@ class InlineImagesMigrationTest {
             db.execSQL("INSERT INTO profiles (name) VALUES ('Existing')")
             db.version = 8
         }
-        val database = Room.databaseBuilder(context, ConnectBotDatabase::class.java, name).build()
+        val database = Room.databaseBuilder(context, ConnectBotDatabase::class.java, name)
+            .addMigrations(ConnectBotDatabase.MIGRATION_10_11).build()
         try {
             val profile = database.profileDao().getAll().single()
             assertEquals("ask", profile.inlineImages)

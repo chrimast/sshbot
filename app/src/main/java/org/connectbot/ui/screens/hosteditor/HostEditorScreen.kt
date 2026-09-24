@@ -32,6 +32,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.DropdownMenuItem
@@ -48,6 +50,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -64,6 +67,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -93,7 +97,9 @@ import org.connectbot.util.TerminalFont
 @Composable
 fun HostEditorScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToProfile: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    onNavigateToAutomation: (Long) -> Unit = {},
     viewModel: HostEditorViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -111,16 +117,20 @@ fun HostEditorScreen(
         onColorChange = viewModel::updateColor,
         onPubkeyChange = viewModel::updatePubkeyId,
         onProfileChange = viewModel::updateProfileId,
+        onNavigateToProfile = onNavigateToProfile,
         onUseAuthAgentChange = viewModel::updateUseAuthAgent,
         onCompressionChange = viewModel::updateCompression,
         onWantSessionChange = viewModel::updateWantSession,
         onStayConnectedChange = viewModel::updateStayConnected,
         onQuickDisconnectChange = viewModel::updateQuickDisconnect,
-        onPostLoginChange = viewModel::updatePostLogin,
+        onEditAutomation = { onNavigateToAutomation(uiState.hostId) },
         onJumpHostChange = viewModel::updateJumpHostId,
         onIpVersionChange = viewModel::updateIpVersion,
         onPasswordChange = viewModel::updatePassword,
         onClearPassword = viewModel::clearSavedPassword,
+        onMoshPortChange = viewModel::updateMoshPort,
+        onMoshServerChange = viewModel::updateMoshServer,
+        onLocaleChange = viewModel::updateLocale,
         onSaveHost = { expandedMode -> viewModel.saveHost(expandedMode) },
         modifier = modifier,
     )
@@ -141,16 +151,20 @@ fun HostEditorScreenContent(
     onColorChange: (String) -> Unit,
     onPubkeyChange: (Long) -> Unit,
     onProfileChange: (Long?) -> Unit,
+    onNavigateToProfile: (Long) -> Unit,
     onUseAuthAgentChange: (String) -> Unit,
     onCompressionChange: (Boolean) -> Unit,
     onWantSessionChange: (Boolean) -> Unit,
     onStayConnectedChange: (Boolean) -> Unit,
     onQuickDisconnectChange: (Boolean) -> Unit,
-    onPostLoginChange: (String) -> Unit,
+    onEditAutomation: () -> Unit,
     onJumpHostChange: (Long?) -> Unit,
     onIpVersionChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onClearPassword: () -> Unit,
+    onMoshPortChange: (String) -> Unit = {},
+    onMoshServerChange: (String) -> Unit = {},
+    onLocaleChange: (String) -> Unit = {},
     onSaveHost: suspend (Boolean) -> Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -829,10 +843,11 @@ private fun PubkeySelector(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ProfileSelector(
+internal fun ProfileSelector(
     profileId: Long?,
     availableProfiles: List<Profile>,
     onProfileSelect: (Long?) -> Unit,
+    onEditProfile: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -887,6 +902,11 @@ private fun ProfileSelector(
                     },
                     contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
                 )
+            }
+        }
+        if (profileId != null && availableProfiles.any { it.id == profileId }) {
+            TextButton(onClick = { onEditProfile(profileId) }) {
+                Text(stringResource(R.string.hostpref_profile_edit))
             }
         }
     }
@@ -1231,7 +1251,7 @@ private fun HostEditorScreenPreview() {
                 wantSession = true,
                 stayConnected = false,
                 quickDisconnect = false,
-                postLogin = "cd /var/www",
+                automationCount = 1,
             ),
             onNavigateBack = {},
             onQuickConnectChange = {},
@@ -1243,12 +1263,13 @@ private fun HostEditorScreenPreview() {
             onColorChange = {},
             onPubkeyChange = {},
             onProfileChange = {},
+            onNavigateToProfile = {},
             onUseAuthAgentChange = {},
             onCompressionChange = {},
             onWantSessionChange = {},
             onStayConnectedChange = {},
             onQuickDisconnectChange = {},
-            onPostLoginChange = {},
+            onEditAutomation = {},
             onJumpHostChange = {},
             onIpVersionChange = {},
             onPasswordChange = {},

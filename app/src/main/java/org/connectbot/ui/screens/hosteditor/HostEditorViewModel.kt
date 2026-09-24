@@ -34,6 +34,7 @@ import org.connectbot.data.entity.Host
 import org.connectbot.data.entity.Profile
 import org.connectbot.data.entity.Pubkey
 import org.connectbot.transport.Transport
+import org.connectbot.util.PreferenceConstants
 import org.connectbot.util.SecurePasswordStorage
 import javax.inject.Inject
 
@@ -55,7 +56,7 @@ data class HostEditorUiState(
     val wantSession: Boolean = true,
     val stayConnected: Boolean = false,
     val quickDisconnect: Boolean = false,
-    val postLogin: String = "",
+    val automationCount: Int = 0,
     val jumpHostId: Long? = null,
     val availableJumpHosts: List<Host> = emptyList(),
     val ipVersion: String = "IPV4_AND_IPV6",
@@ -63,6 +64,11 @@ data class HostEditorUiState(
     val hasExistingPassword: Boolean = false,
     val hasUnsavedChanges: Boolean = false,
     val isSaving: Boolean = false,
+    // Mosh-specific fields
+    val moshPort: String = "0",
+    val moshServer: String = "",
+    val locale: String = "en_US.UTF-8",
+    val moshSupport: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null,
 ) {
@@ -89,7 +95,12 @@ class HostEditorViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val hostId: Long = savedStateHandle.get<Long>("hostId") ?: -1L
-    private val _uiState = MutableStateFlow(HostEditorUiState(hostId = hostId))
+    private val _uiState = MutableStateFlow(
+        HostEditorUiState(
+            hostId = hostId,
+            moshSupport = prefs.getBoolean(PreferenceConstants.MOSH_SUPPORT, false),
+        ),
+    )
     val uiState: StateFlow<HostEditorUiState> = _uiState.asStateFlow()
 
     init {
@@ -98,6 +109,11 @@ class HostEditorViewModel @Inject constructor(
         observeProfiles()
         if (hostId != -1L) {
             loadHost()
+            viewModelScope.launch {
+                repository.observeAutomation(hostId)
+                    .catch { emit(emptyList()) }
+                    .collect { actions -> _uiState.update { it.copy(automationCount = actions.size) } }
+            }
         } else {
             // For new hosts, apply the default profile from settings
             val defaultProfileId = prefs.getLong("defaultProfileId", 0L)
@@ -209,11 +225,14 @@ class HostEditorViewModel @Inject constructor(
                             wantSession = host.wantSession,
                             stayConnected = host.stayConnected,
                             quickDisconnect = host.quickDisconnect,
-                            postLogin = host.postLogin ?: "",
                             jumpHostId = host.jumpHostId,
                             ipVersion = host.ipVersion,
                             hasExistingPassword = hasPassword,
                             hasUnsavedChanges = false,
+                            // Mosh-specific fields
+                            moshPort = host.moshPort.toString(),
+                            moshServer = host.moshServer ?: "",
+                            locale = host.locale,
                             isLoading = false,
                         )
                     }
@@ -356,10 +375,6 @@ class HostEditorViewModel @Inject constructor(
         _uiState.update { it.copy(quickDisconnect = value, hasUnsavedChanges = true) }
     }
 
-    fun updatePostLogin(value: String) {
-        _uiState.update { it.copy(postLogin = value, hasUnsavedChanges = true) }
-    }
-
     fun updateJumpHostId(value: Long?) {
         _uiState.update { it.copy(jumpHostId = value, hasUnsavedChanges = true) }
     }
@@ -447,8 +462,8 @@ class HostEditorViewModel @Inject constructor(
                 state.nickname
             }
 
-            // Only SSH hosts can have a jump host
-            val jumpHostId = if (state.protocol == "ssh") state.jumpHostId else null
+            // Only SSH and Mosh hosts can have a jump host
+            val jumpHostId = if (state.protocol == "ssh" || state.protocol == "mosh") state.jumpHostId else null
 
             val host = Host(
                 id = existingHost?.id ?: 0L,
@@ -465,7 +480,7 @@ class HostEditorViewModel @Inject constructor(
                 wantSession = state.wantSession,
                 stayConnected = state.stayConnected,
                 quickDisconnect = state.quickDisconnect,
-                postLogin = state.postLogin.ifBlank { null },
+                postLogin = null,
                 lastConnect = existingHost?.lastConnect ?: System.currentTimeMillis(),
                 hostKeyAlgo = existingHost?.hostKeyAlgo,
                 useKeys = existingHost?.useKeys ?: true,
@@ -473,12 +488,15 @@ class HostEditorViewModel @Inject constructor(
                 useCtrlAltAsMetaKey = existingHost?.useCtrlAltAsMetaKey ?: false,
                 jumpHostId = jumpHostId,
                 ipVersion = state.ipVersion,
+                moshPort = state.moshPort.toIntOrNull() ?: 0,
+                moshServer = state.moshServer.ifBlank { null },
+                locale = state.locale.ifBlank { "en_US.UTF-8" },
             )
 
             val savedHost = repository.saveHost(host)
 
-            // Handle password storage (only for SSH protocol)
-            if (state.protocol == "ssh") {
+            // Handle password storage for SSH and Mosh
+            if (state.protocol == "ssh" || state.protocol == "mosh") {
                 if (state.password.isNotEmpty()) {
                     // Save or update the password
                     securePasswordStorage.savePassword(savedHost.id, state.password)

@@ -381,6 +381,7 @@ private fun ConsoleTerminalPage(
     hasPlayedKeyboardAnimation: Boolean,
     imeVisible: Boolean,
     handleTerminalInteraction: () -> Unit,
+    onTerminalTap: () -> Unit,
     onShowSoftwareKeyboardChange: (Boolean) -> Unit,
     onImeVisibilityChange: (Boolean) -> Unit,
     onTextInputRequest: () -> Unit,
@@ -443,7 +444,7 @@ private fun ConsoleTerminalPage(
                     onComposeControllerChange(controller)
                 }
             },
-            onTerminalTap = { handleTerminalInteraction() },
+            onTerminalTap = onTerminalTap,
             onImeVisibilityChanged = { visible ->
                 if (isActive) {
                     onImeVisibilityChange(visible)
@@ -642,6 +643,8 @@ fun ConsoleScreen(
     val currentBridge = uiState.bridges
         .getOrNull(uiState.currentBridgeIndex)
     val currentBridgeId = currentBridge?.host?.id
+    val automationState by currentBridge?.automationState?.collectAsState()
+        ?: remember { mutableStateOf(org.connectbot.service.automation.AutomationState()) }
 
     // Preset scripts
     val presetScriptRepository = remember { PresetScriptRepository(prefs) }
@@ -1015,6 +1018,26 @@ fun ConsoleScreen(
                 .windowInsetsPadding(WindowInsets.imeAnimationTarget)
                 .onPreviewKeyEvent(handleShortcut),
         ) {
+            if (automationState.running || automationState.error != null) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.weight(1f).padding(horizontal = 8.dp)) {
+                        if (automationState.running) {
+                            Text(stringResource(R.string.automation_progress, automationState.step, automationState.total))
+                        }
+                        automationState.error?.let { error ->
+                            Text(
+                                stringResource(R.string.automation_failure_step, automationState.failedStep ?: automationState.step, stringResource(error)),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                    if (automationState.running) {
+                        TextButton(onClick = { currentBridge?.cancelAutomation() }) {
+                            Text(stringResource(R.string.automation_cancel_run))
+                        }
+                    }
+                }
+            }
             when {
                 uiState.isLoading -> {
                     LoadingScreen(modifier = Modifier.fillMaxSize())
@@ -1051,7 +1074,11 @@ fun ConsoleScreen(
                                 showExtraKeyboard = showExtraKeyboard,
                                 hasPlayedKeyboardAnimation = hasPlayedKeyboardAnimation,
                                 imeVisible = imeVisible,
-                                handleTerminalInteraction = { handleTerminalInteraction(isTerminalTap = true) },
+                                handleTerminalInteraction = { handleTerminalInteraction() },
+                                onTerminalTap = {
+                                    showSoftwareKeyboard = true
+                                    handleTerminalInteraction(isTerminalTap = true)
+                                },
                                 onShowSoftwareKeyboardChange = { showSoftwareKeyboard = it },
                                 onImeVisibilityChange = { imeVisible = it },
                                 onTextInputRequest = { showTextInputDialog = true },

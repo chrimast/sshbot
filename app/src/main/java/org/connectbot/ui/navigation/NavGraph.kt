@@ -132,6 +132,21 @@ fun ConnectBotNavHost(
         ) {
             HostEditorScreen(
                 onNavigateBack = { navController.safePopBackStack() },
+                onNavigateToProfile = { profileId ->
+                    navController.navigateSafely("${NavDestinations.PROFILE_EDITOR}/$profileId")
+                },
+                onNavigateToAutomation = { hostId ->
+                    navController.navigateSafely("${NavDestinations.AUTOMATION_EDITOR}/$hostId")
+                },
+            )
+        }
+
+        composable(
+            route = "${NavDestinations.AUTOMATION_EDITOR}/{${NavArgs.HOST_ID}}",
+            arguments = listOf(navArgument(NavArgs.HOST_ID) { type = NavType.LongType }),
+        ) {
+            org.connectbot.ui.screens.automation.AutomationEditorScreen(
+                onNavigateBack = { navController.safePopBackStack() },
             )
         }
 

@@ -82,6 +82,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -287,6 +288,8 @@ fun SettingsScreenContent(
     modifier: Modifier = Modifier,
     highlightItem: String? = null,
 ) {
+    var showMoshConfirmDialog by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -746,6 +749,29 @@ fun SettingsScreenContent(
 
     if (uiState.fontDownloadInProgress) {
         FontDownloadProgressDialog()
+    }
+
+    if (showMoshConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showMoshConfirmDialog = false },
+            title = { Text(stringResource(R.string.pref_mosh_confirm_title)) },
+            text = { Text(stringResource(R.string.pref_mosh_confirm_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showMoshConfirmDialog = false
+                        onMoshSupportChange(true)
+                    },
+                ) {
+                    Text(stringResource(R.string.pref_mosh_confirm_enable))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showMoshConfirmDialog = false }) {
+                    Text(stringResource(R.string.pref_mosh_confirm_cancel))
+                }
+            },
+        )
     }
 }
 

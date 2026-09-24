@@ -50,6 +50,7 @@ import org.connectbot.data.ProfileRepository
 import org.connectbot.data.entity.Profile
 import org.connectbot.di.CoroutineDispatchers
 import org.connectbot.terminal.ImeShortcutInputMode
+import org.connectbot.util.InstallMosh
 import org.connectbot.util.LanguageDownloadState
 import org.connectbot.util.LanguagePackManager
 import org.connectbot.util.LocalFontProvider
@@ -340,6 +341,37 @@ class SettingsViewModel @Inject constructor(
 
     fun updateBellNotification(value: Boolean) {
         updateBooleanPref(PreferenceConstants.BELL_NOTIFICATION, value) { copy(bellNotification = value) }
+    }
+
+    fun updateMoshSupport(value: Boolean) {
+        if (!value) {
+            viewModelScope.launch {
+                InstallMosh.setMoshSupportEnabled(context, false)
+                _uiState.update {
+                    it.copy(
+                        moshSupport = false,
+                        moshInstallInProgress = false,
+                        moshInstallError = null,
+                    )
+                }
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(moshInstallInProgress = true, moshInstallError = null) }
+            val result = withContext(dispatchers.io) {
+                InstallMosh.installClient(context)
+            }
+            _uiState.update {
+                it.copy(
+                    moshSupport = result.success,
+                    moshReleaseTag = result.releaseTag ?: it.moshReleaseTag,
+                    moshInstallInProgress = false,
+                    moshInstallError = result.errorMessage,
+                )
+            }
+        }
     }
 
     fun updateTitleBarHide(value: Boolean) {

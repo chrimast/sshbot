@@ -69,7 +69,9 @@ import java.net.InetSocketAddress
 import java.net.NoRouteToHostException
 import java.nio.charset.StandardCharsets
 import java.security.KeyPair
+import java.security.KeyStore
 import java.security.NoSuchAlgorithmException
+import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.interfaces.DSAPrivateKey
 import java.security.interfaces.DSAPublicKey
@@ -84,43 +86,44 @@ import java.util.regex.Pattern
 /**
  * @author Kenny Root
  */
-class SSH :
+open class SSH :
     AbsTransport,
     ConnectionMonitor,
     InteractiveCallback,
     AuthAgentCallback {
 
-    private var compression = false
+    @JvmField
+    protected var compressionEnabled = false
 
     @Volatile
-    private var authenticated = false
+    protected var authenticated = false
 
     @Volatile
-    private var connected = false
+    protected var connected = false
 
     @Volatile
-    private var sessionOpen = false
+    protected var sessionOpen = false
 
     private var pubkeysExhausted = false
     private var interactiveCanContinue = true
     private var savedPasswordTried = false
 
-    private var connection: Connection? = null
+    protected var connection: Connection? = null
     private val jumpConnections: MutableList<Connection> = mutableListOf()
-    private var session: Session? = null
+    protected var session: Session? = null
 
-    private var stdin: OutputStream? = null
-    private var stdout: InputStream? = null
-    private var stderr: InputStream? = null
+    protected var stdin: OutputStream? = null
+    protected var stdout: InputStream? = null
+    protected var stderr: InputStream? = null
 
     private val portForwards = mutableListOf<PortForward>()
     private val userAuthBannerCallbacks = mutableListOf<Pair<Connection, UserAuthBannerCallback>>()
 
-    private var columns: Int = 0
-    private var rows: Int = 0
+    protected var columns: Int = 0
+    protected var rows: Int = 0
 
-    private var width: Int = 0
-    private var height: Int = 0
+    protected var width: Int = 0
+    protected var height: Int = 0
 
     private var useAuthAgent = HostConstants.AUTHAGENT_NO
     private var agentLockPassphrase: String? = null
@@ -212,7 +215,7 @@ class SSH :
     @VisibleForTesting
     internal fun getKeyType(openSshKeyType: String): String? = SshKeyType.fromOpenSshType(openSshKeyType)?.storedName
 
-    inner class HostKeyVerifier(private val verifyHost: Host? = host) : ExtendedServerHostKeyVerifier() {
+    open inner class HostKeyVerifier(private val verifyHost: Host? = host) : ExtendedServerHostKeyVerifier() {
         @Throws(IOException::class)
         override fun verifyServerHostKey(
             hostname: String,
@@ -542,10 +545,10 @@ class SSH :
 
             // Load the key from Keystore after successful biometric auth
             return try {
-                val keyStore = java.security.KeyStore.getInstance("AndroidKeyStore")
+                val keyStore = KeyStore.getInstance("AndroidKeyStore")
                 keyStore.load(null)
                 val publicKey = keyStore.getCertificate(keystoreAlias)?.publicKey
-                val privateKey = keyStore.getKey(keystoreAlias, null) as? java.security.PrivateKey
+                val privateKey = keyStore.getKey(keystoreAlias, null) as? PrivateKey
 
                 if (publicKey == null || privateKey == null) {
                     val message = String.format("Failed to load key '%s' from Keystore.", pubkey.nickname)
@@ -670,10 +673,11 @@ class SSH :
      * Internal method to request actual PTY terminal once we've finished
      * authentication. If called before authenticated, it will just fail.
      */
-    private fun finishConnection() {
+    protected open fun finishConnection() {
         authenticated = true
 
         for (portForward in portForwards) {
+            if (!portForward.startEnabled) continue
             try {
                 enablePortForward(portForward)
                 bridge?.outputLine(manager?.res?.getString(R.string.terminal_enable_portfoward, portForward.getDescription()))
@@ -925,7 +929,7 @@ class SSH :
         }
 
         try {
-            connection?.setCompression(compression)
+            connection?.setCompression(compressionEnabled)
         } catch (e: IOException) {
             Timber.e(e, "Could not enable compression!")
         }
@@ -1096,11 +1100,11 @@ class SSH :
         stdin?.write(c)
     }
 
-    override fun getOptions(): Map<String, String> = mapOf("compression" to compression.toString())
+    override fun getOptions(): Map<String, String> = mapOf("compression" to compressionEnabled.toString())
 
     override fun setOptions(options: Map<String, String>) {
         if (options.containsKey("compression")) {
-            compression = options["compression"]?.toBoolean() ?: false
+            compressionEnabled = options["compression"]?.toBoolean() ?: false
         }
     }
 
@@ -1343,7 +1347,7 @@ class SSH :
     }
 
     override fun setCompression(compression: Boolean) {
-        this.compression = compression
+        this.compressionEnabled = compression
     }
 
     override fun setUseAuthAgent(useAuthAgent: String) {
@@ -1464,6 +1468,12 @@ class SSH :
 
     override fun getLocalIpAddress(): String? = connection?.connectionInfo?.localSocketAddress?.address?.hostAddress
 
+    /**
+     * Returns the protocol name for this transport instance.
+     * SSH returns "ssh", Mosh overrides to return "mosh".
+     */
+    open fun instanceProtocolName(): String = PROTOCOL
+
     companion object {
         init {
             // Since this class deals with Ed25519 keys, we need to make sure this is available.
@@ -1482,21 +1492,21 @@ class SSH :
             }
         }
 
-        private const val PROTOCOL = "ssh"
-        private const val DEFAULT_PORT = 22
+        protected const val PROTOCOL = "ssh"
+        protected const val DEFAULT_PORT = 22
 
-        private const val AUTH_PUBLICKEY = "publickey"
-        private const val AUTH_PASSWORD = "password"
-        private const val AUTH_KEYBOARDINTERACTIVE = "keyboard-interactive"
+        protected const val AUTH_PUBLICKEY = "publickey"
+        protected const val AUTH_PASSWORD = "password"
+        protected const val AUTH_KEYBOARDINTERACTIVE = "keyboard-interactive"
 
-        private const val AUTH_TRIES = 20
+        protected const val AUTH_TRIES = 20
 
-        private val hostmask = Pattern.compile(
+        protected val hostmask = Pattern.compile(
             "^(.+)@((?:[0-9a-z._-]+)|(?:\\[[a-f:0-9]+(?:%[-_.a-z0-9]+)?\\]))(?::(\\d+))?\$",
             Pattern.CASE_INSENSITIVE,
         )
 
-        private const val conditions = (
+        protected const val conditions = (
             ChannelCondition.STDOUT_DATA
                 or ChannelCondition.STDERR_DATA
                 or ChannelCondition.CLOSED

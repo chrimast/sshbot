@@ -1,5 +1,66 @@
 import io.github.reactivecircus.appversioning.toSemVer
+import org.gradle.api.DefaultTask
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.TaskAction
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.net.URI
+import java.util.zip.ZipInputStream
+
+abstract class PrepareGoogleMoshArtifacts : DefaultTask() {
+    @get:Input abstract val releaseTag: Property<String>
+
+    @get:OutputDirectory abstract val jniLibsDirectory: DirectoryProperty
+
+    @get:OutputDirectory abstract val assetsDirectory: DirectoryProperty
+
+    @TaskAction
+    fun prepare() {
+        val tag = releaseTag.get()
+        val jniLibsRoot = jniLibsDirectory.get().asFile
+        val assetsRoot = assetsDirectory.get().asFile
+        jniLibsRoot.deleteRecursively()
+        assetsRoot.deleteRecursively()
+        val abis = listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+        abis.forEach { abi ->
+            val url = URI("https://github.com/connectbot/mosh4android/releases/download/$tag/mosh-android-$abi.zip").toURL()
+            val connection = url.openConnection().apply {
+                connectTimeout = 15_000
+                readTimeout = 60_000
+            }
+            var foundClient = false
+            var foundTerminfo = false
+            ZipInputStream(connection.getInputStream().buffered()).use { archive ->
+                var entry = archive.nextEntry
+                while (entry != null) {
+                    when (entry.name) {
+                        "mosh-client" -> {
+                            val target = jniLibsRoot.resolve("$abi/libmoshexec.so")
+                            target.parentFile.mkdirs()
+                            target.outputStream().use { archive.copyTo(it) }
+                            foundClient = true
+                        }
+
+                        "terminfo.zip" -> {
+                            if (abi == abis.first()) {
+                                val target = assetsRoot.resolve("terminfo.zip")
+                                target.parentFile.mkdirs()
+                                target.outputStream().use { archive.copyTo(it) }
+                            }
+                            foundTerminfo = true
+                        }
+                    }
+                    archive.closeEntry()
+                    entry = archive.nextEntry
+                }
+            }
+            check(foundClient && foundTerminfo) { "Missing mosh-client or terminfo.zip in $abi release archive" }
+        }
+        assetsRoot.resolve("mosh-release.txt").writeText(tag)
+    }
+}
 
 plugins {
     alias(libs.plugins.android.application)
@@ -11,6 +72,16 @@ plugins {
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.kover)
     alias(libs.plugins.sonarqube)
+}
+
+val moshReleaseTag = rootProject.file("gradle/mosh4android.version")
+    .readLines().first { it.isNotBlank() && !it.startsWith("#") }.trim()
+
+val generatedGoogleMosh = layout.buildDirectory.dir("generated/mosh/google")
+val prepareGoogleMoshArtifacts = tasks.register<PrepareGoogleMoshArtifacts>("prepareGoogleMoshArtifacts") {
+    releaseTag.set(moshReleaseTag)
+    jniLibsDirectory.set(generatedGoogleMosh.map { it.dir("jniLibs") })
+    assetsDirectory.set(generatedGoogleMosh.map { it.dir("assets") })
 }
 
 appVersioning {
@@ -128,6 +199,7 @@ android {
             versionNameSuffix = "-oss"
             // No Google Play Services available for downloadable fonts
             buildConfigField("Boolean", "HAS_DOWNLOADABLE_FONTS", "false")
+            buildConfigField("String", "MOSH_RELEASE_TAG", "\"\"")
         }
 
         // This product flavor uses the Google Play Services library for
@@ -138,6 +210,7 @@ android {
             versionNameSuffix = ""
             // Google Play Services available for downloadable fonts
             buildConfigField("Boolean", "HAS_DOWNLOADABLE_FONTS", "true")
+            buildConfigField("String", "MOSH_RELEASE_TAG", "\"$moshReleaseTag\"")
         }
     }
 
@@ -198,6 +271,14 @@ val sonarJavaTestBinaries = mutableListOf<Provider<String>>()
 val sonarAndroidLintReportPaths = mutableListOf<Provider<String>>()
 
 androidComponents {
+    onVariants(selector().withFlavor("license" to "google")) { variant ->
+        variant.sources.jniLibs?.addGeneratedSourceDirectory(prepareGoogleMoshArtifacts) { it.jniLibsDirectory }
+        variant.sources.assets?.addGeneratedSourceDirectory(prepareGoogleMoshArtifacts) { it.assetsDirectory }
+        // The Play-delivered mosh-client needs an executable path in nativeLibraryDir.
+        variant.packaging.jniLibs.useLegacyPackaging.set(true)
+        variant.packaging.jniLibs.useLegacyPackagingFromBundle.set(true)
+    }
+
     onVariants(selector().withBuildType("debug")) { variant ->
         val variantName = variant.name
         val variantTaskName = variantName.replaceFirstChar { it.uppercaseChar() }
@@ -315,7 +396,7 @@ tasks.withType<Test>().configureEach {
 // Generate filtered export schema from Room schema
 // Only includes tables needed for export/import (profiles, hosts, port_forwards)
 val generateExportSchema by tasks.registering {
-    val exportTables = setOf("profiles", "hosts", "port_forwards")
+    val exportTables = setOf("profiles", "hosts", "port_forwards", "automation_actions")
     val excludedFields = setOf("last_connect", "host_key_algo")
 
     // Read schema version from Room's @Database annotation.
