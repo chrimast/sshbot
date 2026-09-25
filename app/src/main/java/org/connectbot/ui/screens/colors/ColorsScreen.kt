@@ -70,6 +70,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -80,6 +81,7 @@ import org.connectbot.data.entity.ColorScheme
 import org.connectbot.ui.PreviewScreen
 import org.connectbot.ui.common.InputFieldShape
 import org.connectbot.ui.common.getLocalizedColorSchemeDescription
+import org.connectbot.ui.components.FocusableAlertDialog
 import org.connectbot.ui.theme.ConnectBotTheme
 
 /**
@@ -596,7 +598,7 @@ private fun NewSchemeDialog(
         mutableLongStateOf(preselectedSchemeId ?: -1L)
     }
 
-    AlertDialog(
+    FocusableAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.dialog_title_new_scheme), style = MaterialTheme.typography.titleMedium) },
         text = {
@@ -670,7 +672,66 @@ private fun NewSchemeDialog(
                 Text(stringResource(R.string.button_cancel))
             }
         },
-    )
+        title = { Text(stringResource(R.string.dialog_title_new_scheme)) },
+    ) { focusRequester ->
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
+                label = { Text(stringResource(R.string.label_scheme_name)) },
+                singleLine = true,
+                isError = error != null,
+            )
+
+            OutlinedTextField(
+                value = description,
+                onValueChange = { description = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.label_scheme_description)) },
+                singleLine = true,
+            )
+
+            Text(
+                text = stringResource(R.string.label_base_scheme),
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+
+            Column {
+                availableSchemes.take(5).forEach { scheme ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedBaseSchemeId = scheme.id }
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = selectedBaseSchemeId == scheme.id,
+                            onClick = { selectedBaseSchemeId = scheme.id },
+                        )
+                        Text(
+                            text = scheme.name,
+                            modifier = Modifier.padding(start = 8.dp),
+                        )
+                    }
+                }
+            }
+
+            if (error != null) {
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+    }
 }
 
 /**

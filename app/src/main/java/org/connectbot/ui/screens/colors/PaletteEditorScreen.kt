@@ -78,6 +78,7 @@ import org.connectbot.ui.common.InputFieldShape
 import org.connectbot.ui.components.ColorPickerDialog
 import org.connectbot.ui.components.RgbColorPickerDialog
 import org.connectbot.ui.components.SaveEditorFab
+import org.connectbot.ui.components.TextInputAlertDialog
 
 /**
  * Screen for editing the full 256-color palette of a color scheme.
@@ -665,7 +666,7 @@ private fun DuplicateSchemeDialog(
 ) {
     var name by remember { mutableStateOf("Copy of $baseName") }
 
-    AlertDialog(
+    TextInputAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.dialog_title_new_scheme), style = MaterialTheme.typography.titleMedium) },
         text = {

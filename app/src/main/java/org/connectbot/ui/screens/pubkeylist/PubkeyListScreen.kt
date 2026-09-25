@@ -37,6 +37,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -87,12 +88,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -101,6 +105,8 @@ import org.connectbot.R
 import org.connectbot.data.entity.Pubkey
 import org.connectbot.ui.LocalTerminalManager
 import org.connectbot.ui.PreviewScreen
+import org.connectbot.ui.components.FocusableAlertDialog
+import org.connectbot.ui.components.TextInputAlertDialog
 import org.connectbot.ui.components.rememberBiometricPromptState
 import org.connectbot.ui.theme.ConnectBotTheme
 import org.connectbot.ui.common.InputFieldShape
@@ -805,8 +811,14 @@ private fun PubkeyPasswordDialog(
 ) {
     var password by remember { mutableStateOf("") }
 
-    AlertDialog(
+    TextInputAlertDialog(
         onDismissRequest = onDismiss,
+        onConfirm = { onProvidePassword(password) },
+        value = password,
+        onValueChange = { password = it },
+        textFieldModifier = Modifier.testTag(PubkeyListTestTags.PASSWORD_FIELD),
+        confirmButtonText = stringResource(R.string.pubkey_unlock),
+        confirmButtonTestTag = PubkeyListTestTags.PASSWORD_CONFIRM_BUTTON,
         icon = { Icon(Icons.Default.Lock, contentDescription = null) },
         title = { Text(stringResource(R.string.pubkey_unlock), style = MaterialTheme.typography.titleMedium) },
         text = {
@@ -842,6 +854,8 @@ private fun PubkeyPasswordDialog(
                 Text(stringResource(android.R.string.cancel))
             }
         },
+        label = { Text(stringResource(R.string.prompt_password)) },
+        isPassword = true,
     )
 }
 
@@ -881,7 +895,7 @@ private fun NicknameConfirmationDialog(
 ) {
     var nickname by rememberSaveable { mutableStateOf(initialNickname) }
 
-    AlertDialog(
+    TextInputAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.pubkey_import_button), style = MaterialTheme.typography.titleMedium) },
         text = {
@@ -930,7 +944,7 @@ private fun ImportPasswordDialog(
             (newPassword.isNotEmpty() && newPassword == confirmPassword)
         )
 
-    AlertDialog(
+    FocusableAlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Default.Lock, contentDescription = null) },
         title = { Text(stringResource(R.string.pubkey_import_encrypted_title), style = MaterialTheme.typography.titleMedium) },
@@ -1038,7 +1052,90 @@ private fun ImportPasswordDialog(
                 Text(stringResource(android.R.string.cancel))
             }
         },
-    )
+        icon = { Icon(Icons.Default.Lock, contentDescription = null) },
+        title = { Text(stringResource(R.string.pubkey_import_encrypted_title)) },
+    ) { focusRequester ->
+        Column {
+            Text(
+                text = stringResource(R.string.pubkey_import_encrypted_message, initialNickname, keyType),
+                modifier = Modifier.padding(bottom = 16.dp),
+            )
+            OutlinedTextField(
+                value = nickname,
+                onValueChange = { nickname = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
+                label = { Text(stringResource(R.string.prompt_nickname)) },
+                singleLine = true,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text(stringResource(R.string.prompt_password)) },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp)
+                    .clickable { encryptKey = !encryptKey },
+            ) {
+                Checkbox(
+                    checked = encryptKey,
+                    onCheckedChange = { encryptKey = it },
+                )
+                Text(stringResource(R.string.pubkey_import_encrypt_key))
+            }
+
+            if (encryptKey) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { reusePassword = !reusePassword },
+                ) {
+                    Checkbox(
+                        checked = reusePassword,
+                        onCheckedChange = { reusePassword = it },
+                    )
+                    Text(stringResource(R.string.pubkey_import_reuse_password))
+                }
+
+                if (!reusePassword) {
+                    OutlinedTextField(
+                        value = newPassword,
+                        onValueChange = { newPassword = it },
+                        label = { Text(stringResource(R.string.pubkey_import_new_password)) },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        singleLine = true,
+                    )
+                    OutlinedTextField(
+                        value = confirmPassword,
+                        onValueChange = { confirmPassword = it },
+                        label = { Text(stringResource(R.string.pubkey_import_confirm_password)) },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        singleLine = true,
+                        isError = confirmPassword.isNotEmpty() && newPassword != confirmPassword,
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -1049,8 +1146,14 @@ private fun ImportFromClipboardDialog(
     val context = LocalContext.current
     var keyText by rememberSaveable { mutableStateOf("") }
 
-    AlertDialog(
+    TextInputAlertDialog(
         onDismissRequest = onDismiss,
+        onConfirm = { onImport(keyText) },
+        value = keyText,
+        onValueChange = { keyText = it },
+        textFieldModifier = Modifier.height(200.dp),
+        confirmEnabled = keyText.isNotBlank(),
+        confirmButtonText = stringResource(R.string.pubkey_import_button),
         icon = { Icon(Icons.Default.ContentPaste, contentDescription = null) },
         title = { Text(stringResource(R.string.pubkey_import_from_clipboard), style = MaterialTheme.typography.titleMedium) },
         text = {
@@ -1073,25 +1176,15 @@ private fun ImportFromClipboardDialog(
                         )
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp),
-                minLines = 5,
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onImport(keyText) },
-                enabled = keyText.isNotBlank(),
             ) {
-                Text(stringResource(R.string.pubkey_import_button))
+                Icon(
+                    Icons.Default.ContentPaste,
+                    contentDescription = stringResource(R.string.pubkey_paste_from_clipboard),
+                )
             }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(android.R.string.cancel))
-            }
-        },
+        singleLine = false,
+        minLines = 5,
     )
 }
 
@@ -1104,7 +1197,7 @@ private fun ExportPassphraseDialog(
     var confirmPassphrase by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
 
-    AlertDialog(
+    FocusableAlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Default.Lock, contentDescription = null) },
         title = { Text(stringResource(R.string.pubkey_export_set_passphrase), style = MaterialTheme.typography.titleMedium) },
@@ -1171,7 +1264,66 @@ private fun ExportPassphraseDialog(
                 Text(stringResource(android.R.string.cancel))
             }
         },
-    )
+    ) { focusRequester ->
+        Column {
+            Text(
+                text = stringResource(R.string.pubkey_export_passphrase_message),
+                modifier = Modifier.padding(bottom = 16.dp),
+            )
+            OutlinedTextField(
+                value = passphrase,
+                onValueChange = {
+                    passphrase = it
+                    showError = false
+                },
+                label = { Text(stringResource(R.string.prompt_password)) },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Next,
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
+                singleLine = true,
+            )
+            OutlinedTextField(
+                value = confirmPassphrase,
+                onValueChange = {
+                    confirmPassphrase = it
+                    showError = false
+                },
+                label = { Text(stringResource(R.string.pubkey_export_confirm_passphrase)) },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done,
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        if (passphrase == confirmPassphrase && passphrase.isNotEmpty()) {
+                            onProvidePassphrase(passphrase)
+                        } else {
+                            showError = true
+                        }
+                    },
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                singleLine = true,
+                isError = showError,
+            )
+            if (showError) {
+                Text(
+                    text = stringResource(R.string.pubkey_export_passphrase_mismatch),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
+    }
 }
 
 @PreviewScreen

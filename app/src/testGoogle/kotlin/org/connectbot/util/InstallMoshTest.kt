@@ -20,47 +20,119 @@ package org.connectbot.util
 import android.content.Context
 import androidx.preference.PreferenceManager
 import androidx.test.core.app.ApplicationProvider
+import com.google.android.gms.tasks.Tasks
+import com.google.android.play.core.splitinstall.SplitInstallManager
 import org.connectbot.BuildConfig
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
 import org.robolectric.RobolectricTestRunner
 import java.io.File
 import java.nio.file.Files
 
 @RunWith(RobolectricTestRunner::class)
 class InstallMoshTest {
-    @Test
-    fun installClient_usesPlayPayloadAndRecordsReleaseTag() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val nativeDir = Files.createTempDirectory("mosh-native").toFile()
-        val originalNativeDir = context.applicationInfo.nativeLibraryDir
-        val terminfoDir = File(context.filesDir, "terminfo")
-        try {
-            terminfoDir.deleteRecursively()
-            PreferenceManager.getDefaultSharedPreferences(context).edit().clear().commit()
-            val client = File(nativeDir, "libmoshexec.so")
-            client.writeBytes(byteArrayOf(0x7f, 0x45, 0x4c, 0x46))
-            client.setExecutable(true)
-            context.applicationInfo.nativeLibraryDir = nativeDir.absolutePath
+    private lateinit var context: Context
+    private lateinit var nativeDir: File
+    private var originalNativeDir: String? = null
+    private lateinit var terminfoDir: File
 
-            val result = InstallMosh.installClient(context)
-
-            assertTrue(result.errorMessage.orEmpty(), result.success)
-            assertEquals(BuildConfig.MOSH_RELEASE_TAG, result.releaseTag)
-            assertEquals(
-                BuildConfig.MOSH_RELEASE_TAG,
-                PreferenceManager.getDefaultSharedPreferences(context)
-                    .getString(PreferenceConstants.MOSH_RELEASE_TAG, null),
-            )
-            assertTrue(File(InstallMosh.getTerminfoPath(), "x/xterm-256color").isFile)
-            assertEquals(client.absolutePath, InstallMosh.getMoshClientPath(context))
-        } finally {
-            context.applicationInfo.nativeLibraryDir = originalNativeDir
-            nativeDir.deleteRecursively()
-            terminfoDir.deleteRecursively()
-            PreferenceManager.getDefaultSharedPreferences(context).edit().clear().commit()
+    @Before
+    fun setUp() {
+        context = ApplicationProvider.getApplicationContext<Context>()
+        nativeDir = Files.createTempDirectory("mosh-native").toFile()
+        originalNativeDir = context.applicationInfo.nativeLibraryDir
+        terminfoDir = File(context.filesDir, "terminfo")
+        terminfoDir.deleteRecursively()
+        PreferenceManager.getDefaultSharedPreferences(context).edit().clear().commit()
+        val client = File(nativeDir, "libmoshexec.so")
+        client.writeBytes(byteArrayOf(0x7f, 0x45, 0x4c, 0x46))
+        client.setExecutable(true)
+        context.applicationInfo.nativeLibraryDir = nativeDir.absolutePath
+        InstallMosh.assetOpener = { _, name ->
+            File("src/testGoogle/assets", name).takeIf { it.isFile }?.inputStream()
+                ?: File("app/src/testGoogle/assets", name).inputStream()
         }
+    }
+
+    @After
+    fun tearDown() {
+        context.applicationInfo.nativeLibraryDir = originalNativeDir
+        nativeDir.deleteRecursively()
+        terminfoDir.deleteRecursively()
+        PreferenceManager.getDefaultSharedPreferences(context).edit().clear().commit()
+        InstallMosh.resetForTest()
+    }
+
+    @Test
+    fun installClient_whenModuleAlreadyInstalled_usesPlayPayloadAndRecordsReleaseTag() {
+        val splitInstallManager = mock(SplitInstallManager::class.java)
+        `when`(splitInstallManager.installedModules).thenReturn(setOf(InstallMosh.MODULE_NAME))
+        InstallMosh.splitInstallManagerProvider = { splitInstallManager }
+
+        val result = InstallMosh.installClient(context)
+
+        assertTrue(result.errorMessage.orEmpty(), result.success)
+        assertEquals(BuildConfig.MOSH_RELEASE_TAG, result.releaseTag)
+        assertEquals(
+            BuildConfig.MOSH_RELEASE_TAG,
+            PreferenceManager.getDefaultSharedPreferences(context)
+                .getString(PreferenceConstants.MOSH_RELEASE_TAG, null),
+        )
+        assertTrue(File(InstallMosh.getTerminfoPath(), "x/xterm-256color").isFile)
+        assertEquals(File(nativeDir, "libmoshexec.so").absolutePath, InstallMosh.getMoshClientPath(context))
+    }
+
+    @Test
+    fun installClient_whenModuleNeedsDownloadAndSucceeds_completesSuccessfully() {
+        val splitInstallManager = mock(SplitInstallManager::class.java)
+        `when`(splitInstallManager.installedModules).thenReturn(emptySet())
+        InstallMosh.splitInstallManagerProvider = { splitInstallManager }
+        InstallMosh.downloadHandler = { _, _ -> true }
+
+        val result = InstallMosh.installClient(context)
+
+        assertTrue(result.errorMessage.orEmpty(), result.success)
+        assertEquals(BuildConfig.MOSH_RELEASE_TAG, result.releaseTag)
+        assertTrue(InstallMosh.isInstallDone())
+    }
+
+    @Test
+    fun installClient_whenDownloadFails_returnsFailure() {
+        val splitInstallManager = mock(SplitInstallManager::class.java)
+        `when`(splitInstallManager.installedModules).thenReturn(emptySet())
+        InstallMosh.splitInstallManagerProvider = { splitInstallManager }
+        InstallMosh.downloadHandler = { _, _ -> false }
+
+        val result = InstallMosh.installClient(context)
+
+        assertFalse(result.success)
+        assertEquals("Failed to download Mosh feature from Google Play", result.errorMessage)
+    }
+
+    @Test
+    fun isInstalled_whenModuleNotInstalled_returnsFalse() {
+        val splitInstallManager = mock(SplitInstallManager::class.java)
+        `when`(splitInstallManager.installedModules).thenReturn(emptySet())
+        InstallMosh.splitInstallManagerProvider = { splitInstallManager }
+
+        assertFalse(InstallMosh.isInstalled(context))
+    }
+
+    @Test
+    fun isInstalled_whenModuleInstalledAndFilesPresent_returnsTrue() {
+        val splitInstallManager = mock(SplitInstallManager::class.java)
+        `when`(splitInstallManager.installedModules).thenReturn(setOf(InstallMosh.MODULE_NAME))
+        InstallMosh.splitInstallManagerProvider = { splitInstallManager }
+
+        InstallMosh.installClient(context)
+        assertTrue(InstallMosh.isInstalled(context))
     }
 }

@@ -62,7 +62,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -84,6 +83,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.delay
@@ -95,6 +95,7 @@ import org.connectbot.ui.ObservePermissionOnResume
 import org.connectbot.ui.PreviewScreen
 import org.connectbot.ui.common.getLocalizedFontDisplayName
 import org.connectbot.ui.components.FontDownloadProgressDialog
+import org.connectbot.ui.components.TextInputAlertDialog
 import org.connectbot.ui.theme.ConnectBotTheme
 import org.connectbot.util.LanguageDownloadState
 import org.connectbot.util.LocalFontProvider
@@ -288,8 +289,6 @@ fun SettingsScreenContent(
     modifier: Modifier = Modifier,
     highlightItem: String? = null,
 ) {
-    var showMoshConfirmDialog by remember { mutableStateOf(false) }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -750,29 +749,6 @@ fun SettingsScreenContent(
     if (uiState.fontDownloadInProgress) {
         FontDownloadProgressDialog()
     }
-
-    if (showMoshConfirmDialog) {
-        AlertDialog(
-            onDismissRequest = { showMoshConfirmDialog = false },
-            title = { Text(stringResource(R.string.pref_mosh_confirm_title)) },
-            text = { Text(stringResource(R.string.pref_mosh_confirm_message)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showMoshConfirmDialog = false
-                        onMoshSupportChange(true)
-                    },
-                ) {
-                    Text(stringResource(R.string.pref_mosh_confirm_enable))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showMoshConfirmDialog = false }) {
-                    Text(stringResource(R.string.pref_mosh_confirm_cancel))
-                }
-            },
-        )
-    }
 }
 
 private fun buildAvailableLanguageList(context: android.content.Context): List<Pair<String, String>> {
@@ -1009,7 +985,7 @@ private fun TextPreferenceDialog(
 ) {
     var textValue by remember { mutableStateOf(value) }
 
-    AlertDialog(
+    TextInputAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title, style = MaterialTheme.typography.titleMedium) },
         text = {
@@ -1280,7 +1256,7 @@ private fun ListPreferenceWithCustomDialog(
     var customValue by remember { mutableStateOf(value) }
 
     if (showCustomInput) {
-        AlertDialog(
+        TextInputAlertDialog(
             onDismissRequest = {
                 showCustomInput = false
                 onDismiss()
@@ -1425,7 +1401,7 @@ private fun AddCustomTerminalTypePreference(
     }
 
     if (showAddDialog) {
-        AlertDialog(
+        TextInputAlertDialog(
             onDismissRequest = {
                 showAddDialog = false
                 newTerminalType = ""
@@ -1459,10 +1435,15 @@ private fun AddCustomTerminalTypePreference(
                 TextButton(onClick = {
                     showAddDialog = false
                     newTerminalType = ""
-                }) {
-                    Text(stringResource(R.string.delete_neg))
                 }
             },
+            value = newTerminalType,
+            onValueChange = { newTerminalType = it },
+            confirmEnabled = newTerminalType.isNotBlank(),
+            confirmButtonText = stringResource(R.string.button_add),
+            dismissButtonText = stringResource(R.string.delete_neg),
+            title = { Text(stringResource(R.string.dialog_customterminal_title)) },
+            label = { Text(stringResource(R.string.dialog_customterminal_hint)) },
         )
     }
 }
@@ -1519,7 +1500,7 @@ private fun AddCustomFontPreference(
     }
 
     if (showAddDialog) {
-        AlertDialog(
+        TextInputAlertDialog(
             onDismissRequest = {
                 if (!validationInProgress) {
                     showAddDialog = false
@@ -1579,6 +1560,11 @@ private fun AddCustomFontPreference(
                     Text(stringResource(android.R.string.cancel))
                 }
             },
+            isError = validationError != null,
+            keyboardOptions = KeyboardOptions(
+                autoCorrectEnabled = false,
+                imeAction = ImeAction.Done,
+            ),
         )
     }
 
@@ -1656,7 +1642,7 @@ private fun LocalFontPreference(
 
     // Dialog to get display name for imported font
     if (showNameDialog) {
-        AlertDialog(
+        TextInputAlertDialog(
             onDismissRequest = {
                 if (!importInProgress) {
                     showNameDialog = false
@@ -1717,6 +1703,7 @@ private fun LocalFontPreference(
                     Text(stringResource(android.R.string.cancel))
                 }
             },
+            isError = importError != null,
         )
     }
 

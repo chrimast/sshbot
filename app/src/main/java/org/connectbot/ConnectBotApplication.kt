@@ -18,10 +18,12 @@
 package org.connectbot
 
 import android.app.Application
+import android.content.Context
 import dagger.hilt.android.HiltAndroidApp
 import org.connectbot.backup.WebDavSyncPreferences
 import org.connectbot.backup.WebDavSyncScheduler
 import org.connectbot.logging.TimberInitializer
+import org.connectbot.util.SplitCompatLoader
 import javax.inject.Inject
 
 @HiltAndroidApp
