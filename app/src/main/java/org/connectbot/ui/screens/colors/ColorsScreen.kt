@@ -75,14 +75,19 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.connectbot.R
+import org.connectbot.data.JsonImportReader
+import org.connectbot.data.JsonImportTooLargeException
 import org.connectbot.data.entity.ColorScheme
 import org.connectbot.ui.PreviewScreen
 import org.connectbot.ui.common.InputFieldShape
 import org.connectbot.ui.common.getLocalizedColorSchemeDescription
 import org.connectbot.ui.components.FocusableAlertDialog
 import org.connectbot.ui.theme.ConnectBotTheme
+import java.io.IOException
 
 /**
  * Screen for managing color schemes (create, duplicate, delete).
@@ -140,10 +145,10 @@ fun ColorsScreen(
         uri?.let { fileUri ->
             scope.launch {
                 try {
-                    val jsonString =
-                        context.contentResolver.openInputStream(fileUri)?.use { input ->
-                            input.bufferedReader().readText()
-                        } ?: return@launch
+                    val jsonString = withContext(Dispatchers.IO) {
+                        context.contentResolver.openInputStream(fileUri)?.use(JsonImportReader::read)
+                            ?: throw IOException(context.getString(R.string.import_file_unavailable))
+                    }
 
                     val schemeId =
                         repository.importScheme(jsonString, allowOverwrite = false)
@@ -158,6 +163,8 @@ fun ColorsScreen(
                         ),
                         Toast.LENGTH_SHORT,
                     ).show()
+                } catch (e: JsonImportTooLargeException) {
+                    Toast.makeText(context, R.string.import_json_file_too_large, Toast.LENGTH_LONG).show()
                 } catch (e: org.json.JSONException) {
                     Toast.makeText(
                         context,
@@ -203,7 +210,8 @@ fun ColorsScreen(
             }
         },
         onImportScheme = {
-            importLauncher.launch(arrayOf("application/json", "text/plain"))
+            // Document providers may assign JSON files a generic MIME type.
+            importLauncher.launch(arrayOf("*/*"))
         },
         onShowNewSchemeDialog = viewModel::showNewSchemeDialog,
         onClearError = viewModel::clearError,
