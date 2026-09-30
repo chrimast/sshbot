@@ -373,6 +373,7 @@ private fun ConsoleTerminalPage(
     bridge: TerminalBridge,
     isActive: Boolean,
     keyboardAlwaysVisible: Boolean,
+    pgUpDnGestureEnabled: Boolean,
     showSoftwareKeyboard: Boolean,
     resizeSuspended: Boolean,
     forceSize: Pair<Int, Int>?,
@@ -454,6 +455,14 @@ private fun ConsoleTerminalPage(
             delKeyMode = delKeyMode,
             onPasteRequest = onPasteRequest,
             onInterceptKey = onInterceptKey,
+            onPageGesture = if (pgUpDnGestureEnabled) {
+                { key ->
+                    bridge.keyHandler.sendPressedKey(key)
+                    bridge.tryKeyVibrate()
+                }
+            } else {
+                null
+            },
         )
 
         SideEffect {
@@ -584,6 +593,9 @@ fun ConsoleScreen(
         ImeShortcutInputMode.entries.firstOrNull { it.name == storedMode }
             ?: ImeShortcutInputMode.FORCE_ASCII
     }
+    val pgUpDnGestureEnabled = remember {
+        prefs.getBoolean(PreferenceConstants.PG_UPDN_GESTURE, false)
+    }
     var fullscreen by remember { mutableStateOf(prefs.getBoolean(PreferenceConstants.FULLSCREEN, false)) }
     var titleBarHide by remember { mutableStateOf(prefs.getBoolean(PreferenceConstants.TITLEBARHIDE, false)) }
     val volumeKeysChangeFontSize = remember { prefs.getBoolean(PreferenceConstants.VOLUME_FONT, true) }
@@ -624,10 +636,11 @@ fun ConsoleScreen(
     var showExtraKeyboard by remember { mutableStateOf(true) } // Start visible to show animation
     var hasPlayedKeyboardAnimation by remember { mutableStateOf(false) }
     var showTitleBar by remember { mutableStateOf(!titleBarHide) }
-    // Non-state holder for auto-hide job to avoid unnecessary recompositions
+    // Non-state holders for auto-hide jobs to avoid unnecessary recompositions
     val autoHideJobRef = remember {
         object {
-            var job: Job? = null
+            var keyboardJob: Job? = null
+            var titleBarJob: Job? = null
         }
     }
     var scannedUrls by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -663,25 +676,32 @@ fun ConsoleScreen(
     val anyModalActive = showMenu || showUrlScanDialog || showResizeDialog ||
         showDisconnectDialog || showTextInputDialog || showPresetScriptDialog || isBiometricPromptActive || currentAuthBanner != null
 
+    fun restartTitleBarTimer() {
+        autoHideJobRef.titleBarJob?.cancel()
+        if (titleBarHide && !showMenu) {
+            autoHideJobRef.titleBarJob = coroutineScope.launch {
+                delay(AUTO_HIDE_DELAY_MS)
+                showTitleBar = false
+            }
+        }
+    }
+
     /**
-     * Unified interaction handler for terminal and keyboard.
      * Manages visibility of the extra keyboard and title bar based on preferences.
-     *
-     * Intent Matrix:
-     * | keyboardAlwaysVisible | titleBarHide | keyboardScrollInProgress | anyModalActive | isTerminalTap | Action                     |
-     * |-----------------------|--------------|--------------------------|----------------|---------------|----------------------------|
-     * | false                 | any          | false                    | false          | any           | Show KB, Start/Reset Timer |
-     * | any                   | true         | false                    | false          | true          | Show TB, Start/Reset Timer |
-     * | true                  | false        | any                      | any            | any           | Ensure Both Shown, No Timer|
-     * | any                   | any          | true                     | any            | any           | Show KB, Cancel Timer      |
-     * | any                   | any          | any                      | true           | any           | Cancel Timer               |
+     * Terminal taps reveal both; keyboard interactions reset only the keyboard timer.
      *
      * @param isTerminalTap Whether this call was triggered by a terminal tap or title bar action.
      * @param isInteraction Whether this call was triggered by a user interaction (tap, key press, scroll).
      *                      If false, only the timer is managed without forcing visibility to true.
+     * @param resetTitleBarTimer Whether this interaction should extend title bar visibility.
      */
-    fun handleTerminalInteraction(isTerminalTap: Boolean = false, isInteraction: Boolean = true) {
-        autoHideJobRef.job?.cancel()
+    fun handleTerminalInteraction(
+        isTerminalTap: Boolean = false,
+        isInteraction: Boolean = true,
+        resetTitleBarTimer: Boolean = true,
+    ) {
+        autoHideJobRef.keyboardJob?.cancel()
+        if (resetTitleBarTimer) restartTitleBarTimer()
 
         if (isInteraction || keyboardScrollInProgress) {
             // Show emulated keyboard on any interaction or while scrolling (unless always visible)
@@ -698,21 +718,10 @@ fun ConsoleScreen(
         if (keyboardAlwaysVisible) showExtraKeyboard = true
         if (!titleBarHide) showTitleBar = true
 
-        // Only start the auto-hide timer if we are not actively scrolling,
-        // no modal is active, and at least one element is configured to auto-hide.
-        if (!keyboardScrollInProgress && !anyModalActive && (!keyboardAlwaysVisible || titleBarHide)) {
-            autoHideJobRef.job = coroutineScope.launch {
+        if (!keyboardScrollInProgress && !keyboardAlwaysVisible) {
+            autoHideJobRef.keyboardJob = coroutineScope.launch {
                 delay(AUTO_HIDE_DELAY_MS)
-                // Accessing Compose State within coroutine to avoid stale closures
-                // Hide keyboard if not always visible
-                if (!keyboardAlwaysVisible) {
-                    showExtraKeyboard = false
-                }
-                // Hide title bar if auto-hide is enabled
-                if (titleBarHide) {
-                    showTitleBar = false
-                }
-                // Mark animation as played after first timeout
+                showExtraKeyboard = false
                 hasPlayedKeyboardAnimation = true
             }
         }
@@ -733,11 +742,10 @@ fun ConsoleScreen(
         viewModel.selectBridge(index)
     }
 
-    // Sync our state when user dismisses modals or prompts
-    LaunchedEffect(anyModalActive) {
-        if (!anyModalActive) {
-            // When modals are dismissed, restart the auto-hide timer
-            handleTerminalInteraction(isInteraction = false)
+    // Resume title bar auto-hide when the overflow menu closes.
+    LaunchedEffect(showMenu) {
+        if (!showMenu) {
+            restartTitleBarTimer()
         }
     }
 
@@ -1067,6 +1075,7 @@ fun ConsoleScreen(
                                 bridge = bridge,
                                 isActive = true,
                                 keyboardAlwaysVisible = keyboardAlwaysVisible,
+                                pgUpDnGestureEnabled = pgUpDnGestureEnabled,
                                 showSoftwareKeyboard = showSoftwareKeyboard,
                                 resizeSuspended = resizeSuspended,
                                 forceSize = forceSize,
@@ -1074,7 +1083,9 @@ fun ConsoleScreen(
                                 showExtraKeyboard = showExtraKeyboard,
                                 hasPlayedKeyboardAnimation = hasPlayedKeyboardAnimation,
                                 imeVisible = imeVisible,
-                                handleTerminalInteraction = { handleTerminalInteraction() },
+                                handleTerminalInteraction = {
+                                    handleTerminalInteraction(resetTitleBarTimer = false)
+                                },
                                 onTerminalTap = {
                                     showSoftwareKeyboard = true
                                     handleTerminalInteraction(isTerminalTap = true)
@@ -1087,7 +1098,7 @@ fun ConsoleScreen(
                                 },
                                 onKeyboardScrollInProgressChange = { inProgress ->
                                     keyboardScrollInProgress = inProgress
-                                    handleTerminalInteraction()
+                                    handleTerminalInteraction(resetTitleBarTimer = false)
                                 },
                                 onSelectionControllerChange = { selectionController = it },
                                 onComposeControllerChange = { composeController = it },
@@ -1251,6 +1262,7 @@ fun ConsoleScreen(
                             showPresetScriptDialog = true
                         },
                         enabled = currentBridge != null,
+                        modifier = Modifier.testTag("title_bar_text_input"),
                     ) {
                         Icon(
                             Icons.Default.Code,
@@ -1279,6 +1291,7 @@ fun ConsoleScreen(
                                 viewModel.refreshMenuState()
                                 menuImeWasVisible = imeVisible
                                 resizeSuspended = true
+                                autoHideJobRef.titleBarJob?.cancel()
                                 showMenu = true
                             },
                         ) {
@@ -1292,10 +1305,6 @@ fun ConsoleScreen(
                             expanded = showMenu,
                             onDismissRequest = {
                                 showMenu = false
-                                // Hide title bar again after closing menu if auto-hide is enabled
-                                if (titleBarHide) {
-                                    showTitleBar = false
-                                }
                                 termFocusRequester.requestFocus()
                             },
                         ) {
