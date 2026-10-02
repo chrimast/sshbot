@@ -58,6 +58,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -104,8 +105,8 @@ fun HostEditorScreen(
         hostId = uiState.hostId,
         uiState = uiState,
         onNavigateBack = onNavigateBack,
-        onQuickConnectChange = viewModel::updateQuickConnect,
-        onNicknameChange = { nickname, isExpanded -> viewModel.updateNickname(nickname, isExpanded) },
+        onNicknameChange = viewModel::updateNickname,
+        onNicknameFocusChange = viewModel::onNicknameFocusChanged,
         onProtocolChange = viewModel::updateProtocol,
         onCancelMoshInstall = viewModel::cancelMoshInstall,
         onUsernameChange = viewModel::updateUsername,
@@ -128,7 +129,7 @@ fun HostEditorScreen(
         onMoshPortChange = viewModel::updateMoshPort,
         onMoshServerChange = viewModel::updateMoshServer,
         onLocaleChange = viewModel::updateLocale,
-        onSaveHost = { expandedMode -> viewModel.saveHost(expandedMode) },
+        onSaveHost = viewModel::saveHost,
         modifier = modifier,
     )
 }
@@ -139,8 +140,8 @@ fun HostEditorScreenContent(
     hostId: Long,
     uiState: HostEditorUiState,
     onNavigateBack: () -> Unit,
-    onQuickConnectChange: (String) -> Unit,
-    onNicknameChange: (String, Boolean) -> Unit,
+    onNicknameChange: (String) -> Unit,
+    onNicknameFocusChange: (Boolean) -> Unit,
     onProtocolChange: (String) -> Unit,
     onCancelMoshInstall: () -> Unit = {},
     onUsernameChange: (String) -> Unit,
@@ -163,7 +164,7 @@ fun HostEditorScreenContent(
     onMoshPortChange: (String) -> Unit = {},
     onMoshServerChange: (String) -> Unit = {},
     onLocaleChange: (String) -> Unit = {},
-    onSaveHost: suspend (Boolean) -> Boolean,
+    onSaveHost: suspend () -> Boolean,
     modifier: Modifier = Modifier,
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -326,6 +327,7 @@ fun HostEditorScreenContent(
                         singleLine = true,
                     )
 
+                if (showAdvancedOptions) {
                     // IP version selector (disabled for literal IP addresses)
                     IpVersionSelector(
                         ipVersion = uiState.ipVersion,
@@ -351,7 +353,9 @@ fun HostEditorScreenContent(
                             },
                             visualTransformation = PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
                             singleLine = true,
                         )
 
@@ -1260,8 +1264,8 @@ private fun HostEditorScreenPreview() {
                 automationCount = 1,
             ),
             onNavigateBack = {},
-            onQuickConnectChange = {},
-            onNicknameChange = { _, _ -> },
+            onNicknameChange = {},
+            onNicknameFocusChange = {},
             onProtocolChange = {},
             onUsernameChange = {},
             onHostnameChange = {},
