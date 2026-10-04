@@ -45,6 +45,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Error
@@ -157,9 +158,15 @@ fun SettingsScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.openNotificationChannelSettings.collect { intent ->
+            context.startActivity(intent)
+        }
+    }
+
     // Re-check permission status when screen resumes (e.g., user grants/revokes in Settings)
     ObservePermissionOnResume { isGranted ->
-        viewModel.onNotificationPermissionResult(isGranted)
+        viewModel.onNotificationPermissionChanged(isGranted)
     }
 
     // Show permission denied dialog if needed
@@ -942,6 +949,20 @@ private fun WebDavBackupPreference(
             }
         }
         HorizontalDivider(modifier = Modifier.padding(vertical = 0.dp))
+    }
+}
+
+@Composable
+private fun NotificationChannelsPreference(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        ListItem(
+            trailingContent = { Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null) },
+            modifier = Modifier.clickable(onClick = onClick),
+        ) { Text(stringResource(R.string.pref_notification_channels_title)) }
+        HorizontalDivider()
     }
 }
 

@@ -68,7 +68,7 @@
   <string name="host_verification_failure_warning_header">ALERTA: LA IDENTIFICACIÓ DEL SERVIDOR REMOT HA CANVIAT!</string>
   <string name="host_verification_failure_warning">ES POSSIBLE QUE ALGÚ ESTIGUI FENT ALGUNA COSA LLETGA!\nAlgú pot estar escoltant la teva comunicació (atac home-al-mig)!\nTambé és possible que simplement el servidor hagi canviat la clau.</string>
   <string name="prompt_continue_connecting">Estàs segur que vols\ncontinuar connectant?</string>
-  <string name="host_authenticity_warning">La autenticació amb el servidor \'%1$s\' no es pot establir.</string>
+  <string name="host_authenticity_warning">No es pot verificar l\'autenticitat del servidor \'%1$s\'.</string>
   <string name="host_fingerprint">Servidor %1$s empremta de la clau és %2$s</string>
   <string name="host_key_verification_title">Verificació de la clau de l\'amfitrió</string>
   <string name="fingerprint_format_header">Format de la petjada digital</string>
@@ -103,7 +103,7 @@
   <string name="button_import">Importa</string>
   <string name="font_importing">S\'està carregant el tipus de lletra...</string>
   <string name="pref_backupkeys_title">Còpia de seguretat de claus públiques</string>
-  <string name="pref_backupkeys_summary">Crea una còpia de seguretat de les claus públiques mitjançant el mecanisme de còpia d\'Android</string>
+  <string name="pref_backupkeys_summary">Crea una còpia de seguretat de les claus privades mitjançant el mecanisme de còpia d\'Android</string>
   <string name="pref_ui_category">Interfície d\'usuari</string>
   <string name="pref_language_title">Idioma</string>
   <string name="pref_language_system_default">Configuració per defecte del sistema</string>
@@ -550,10 +550,10 @@
   <string name="pref_imetogglekey_title" tools:machine_translated="true">Mostra la tecla d\'activació/desactivació de l\'IME.</string>
   <string name="pref_imetogglekey_summary" tools:machine_translated="true">Afegeix un botó d’IME a la fila de tecles especials que permeti activar o desactivar el mode de composició per als idiomes que requereixen un buffer de composició (japonès, xinès, coreà, etc.).</string>
   <string name="pref_ime_shortcut_mode_title" tools:machine_translated="true">Dreceres de teclat Ctrl/Alt per a l’IME complet</string>
-  <string name="pref_ime_shortcut_mode_disabled" tools:machine_translated="true">No hi ha cap solució alternativa.</string>
+  <string name="pref_ime_shortcut_mode_disabled" tools:machine_translated="true">No utilitzis cap solució alternativa</string>
   <string name="pref_ime_shortcut_mode_type_null" tools:machine_translated="true">Esdeveniments de teclat sense processar.</string>
   <string name="pref_ime_shortcut_mode_force_ascii" tools:machine_translated="true">Força l’ús de teclat ASCII (recomanat)</string>
-  <string name="pref_swipe_sessions_title" tools:machine_translated="true">Desliza per canviar de sessió.</string>
+  <string name="pref_swipe_sessions_title" tools:machine_translated="true">Llisca per canviar de sessió</string>
   <string name="pref_swipe_sessions_summary" tools:machine_translated="true">Activeu el gest d’arrossegar horitzontalment per canviar entre les sessions del terminal. Per defecte, aquesta funció està desactivada per facilitar-ne l’ús a persones amb discapacitat.</string>
   <string name="console_switch_session" tools:machine_translated="true">Canvia de sessió</string>
   <string name="console_previous_session" tools:machine_translated="true">Sessió anterior</string>
@@ -595,20 +595,20 @@
   <string name="inline_images_prompt_message" tools:machine_translated="true">Permetre que aquest servidor mostri imatges en línia durant la resta d’aquesta sessió?</string>
   <string name="automation_load_failed" tools:machine_translated="true">No s’ha pogut carregar l’automatització.</string>
   <string name="automation_save_failed" tools:machine_translated="true">No s’ha pogut desar l’automatització.</string>
-  <string name="automation_invalid_action" tools:machine_translated="true">Comproveu el text, el patró, la durada o el port de reenvio seleccionat.</string>
+  <string name="automation_invalid_action" tools:machine_translated="true">Comproveu el text, el patró, la durada o el reenviament de port seleccionat</string>
   <string name="automation_action_failed" tools:machine_translated="true">L’acció ha fallat.</string>
   <string name="automation_timed_out" tools:machine_translated="true">S’ha superat el temps d’espera per rebre el text.</string>
   <string name="automation_buffer_overflow" tools:machine_translated="true">Es va generar massa informació abans que l’automatització pogués processar-la.</string>
   <string name="automation_no_session" tools:machine_translated="true">Aquesta acció requereix una sessió de terminal activa.</string>
-  <string name="automation_forward_missing" tools:machine_translated="true">El reenvio de ports no està disponible.</string>
+  <string name="automation_forward_missing" tools:machine_translated="true">Falta el reenviament de port</string>
   <string name="automation_forward_unsupported" tools:machine_translated="true">Aquesta connexió no admet la redirecció de ports.</string>
   <string name="automation_wait_text" tools:machine_translated="true">Espera la cadena.</string>
   <string name="automation_send_text" tools:machine_translated="true">Envia la cadena.</string>
   <string name="automation_send_key" tools:machine_translated="true">Envia una tecla especial.</string>
   <string name="automation_delay" tools:machine_translated="true">Espera</string>
   <string name="automation_disconnect" tools:machine_translated="true">Desconnectar</string>
-  <string name="automation_enable_forward" tools:machine_translated="true">Activa el reenviaments de ports.</string>
-  <string name="automation_disable_forward" tools:machine_translated="true">Desactiva el reenviaments de ports.</string>
+  <string name="automation_enable_forward" tools:machine_translated="true">Activa el reenviament de port</string>
+  <string name="automation_disable_forward" tools:machine_translated="true">Desactiva el reenviament de port</string>
   <string name="automation_add" tools:machine_translated="true">Afegeix una acció</string>
   <string name="automation_save" tools:machine_translated="true">Desa</string>
   <string name="automation_edit" tools:machine_translated="true">Edita</string>
@@ -619,11 +619,11 @@
   <string name="automation_cancel" tools:machine_translated="true">Cancel·la</string>
   <string name="automation_text" tools:machine_translated="true">Text</string>
   <string name="automation_regex" tools:machine_translated="true">Expressió regular</string>
-  <string name="automation_regex_help" tools:machine_translated="true">Compara el text entrant sense format ANSI. L’expressió regular admet la sintaxi RE2; no admet la cerca anticipada ni les referències enrere.</string>
+  <string name="automation_regex_help" tools:machine_translated="true">Compara el text entrant sense format ANSI. Les expressions regulars admeten la sintaxi RE2; no s’admeten les assercions d’anticipació i retrospecció (lookaround) ni les referències enrere.</string>
   <string name="automation_duration" tools:machine_translated="true">Durada (segons)</string>
   <string name="automation_timeout" tools:machine_translated="true">Temps màxim d\'espera (segons)</string>
-  <string name="automation_key" tools:machine_translated="true">Clau</string>
-  <string name="automation_forward" tools:machine_translated="true">Reenvia el port</string>
+  <string name="automation_key" tools:machine_translated="true">Tecla</string>
+  <string name="automation_forward" tools:machine_translated="true">Reenviament de port</string>
   <string name="automation_failure" tools:machine_translated="true">En cas d’error.</string>
   <string name="automation_stop" tools:machine_translated="true">Atura l\'automatització.</string>
   <string name="automation_continue" tools:machine_translated="true">Continua</string>
@@ -631,9 +631,9 @@
   <string name="automation_progress" tools:machine_translated="true">Automatització: %1$d / %2$d</string>
   <string name="automation_failure_step" tools:machine_translated="true">Acció número %1$d: %2$s</string>
   <string name="automation_cancel_run" tools:machine_translated="true">Cancel·la l\'automatització</string>
-  <string name="automation_key_enter" tools:machine_translated="true">Introdueix</string>
-  <string name="automation_key_tab" tools:machine_translated="true">Pestanya</string>
-  <string name="automation_key_escape" tools:machine_translated="true">Sortir</string>
+  <string name="automation_key_enter" tools:machine_translated="true">Enter</string>
+  <string name="automation_key_tab" tools:machine_translated="true">Tab</string>
+  <string name="automation_key_escape" tools:machine_translated="true">Esc</string>
   <string name="automation_key_backspace" tools:machine_translated="true">Tecla de retrocess.</string>
   <string name="automation_key_delete" tools:machine_translated="true">Suprimeix</string>
   <string name="automation_key_up" tools:machine_translated="true">Fletxa cap amunt</string>
@@ -643,13 +643,59 @@
   <string name="automation_key_home" tools:machine_translated="true">Inici</string>
   <string name="automation_key_end" tools:machine_translated="true">Final</string>
   <string name="automation_key_insert" tools:machine_translated="true">Insereix</string>
-  <string name="automation_key_page_up" tools:machine_translated="true">Pàgina següent</string>
+  <string name="automation_key_page_up" tools:machine_translated="true">Page Up</string>
   <string name="automation_key_page_down" tools:machine_translated="true">Pàgina següent</string>
   <string name="automation_key_function" tools:machine_translated="true">F%1$s</string>
   <string name="automation_key_shift" tools:machine_translated="true">Tecla Shift</string>
   <string name="automation_seconds" tools:machine_translated="true">%1$.3f seg.</string>
   <plurals name="automation_count" tools:machine_translated="true">
     <item quantity="one">%1$d acció</item>
+    <item quantity="many">%1$d accions</item>
     <item quantity="other">%1$d accions</item>
+  </plurals>
+  <string name="host_status_unread_output" tools:machine_translated="true">Sortida no llegida</string>
+  <string name="host_status_user_disconnected" tools:machine_translated="true">S\'ha desconnectat d\'aquest servidor.</string>
+  <string name="host_status_session_exit" tools:machine_translated="true">La sessió remota ha finalitzat.</string>
+  <string name="host_status_remote_closed" tools:machine_translated="true">El servidor ha tancat la connexió. Podeu tornar a connectar-vos.</string>
+  <string name="host_status_connection_lost" tools:machine_translated="true">La connexió s’ha perdut. Podeu tornar-vos a connectar.</string>
+  <string name="host_status_network_lost" tools:machine_translated="true">S’ha perdut la connexió de xarxa. Torneu a connectar-vos quan la xarxa estigui disponible.</string>
+  <string name="host_status_auth_failed" tools:machine_translated="true">L\'autenticació ha fallat. Comproveu el vostre nom d\'usuari, contrasenya o clau abans de tornar-vos a connectar.</string>
+  <string name="host_status_connection_ended" tools:machine_translated="true">La connexió s’ha finalitzat.</string>
+  <string name="host_status_action_required" tools:machine_translated="true">La connexió requereix atenció.</string>
+  <string name="host_status_unread_explanation" tools:machine_translated="true">%1$s Obriu la consola per veure la resta de la informació.</string>
+  <string name="pref_conn_persist_disabled_summary" tools:machine_translated="true">És possible que Android aturi ConnectBot i desconnecti les vostres sessions quan canvieu d’aplicació.</string>
+  <string name="hostpref_mosh_network_timeout_title" tools:machine_translated="true">Temps màxim de connexió de la xarxa de Mosh (segons)</string>
+  <string name="hostpref_mosh_network_timeout_summary" tools:machine_translated="true">Temps sense actualitzacions del client abans que el servidor es tanqui. Deixeu el camp en blanc per utilitzar la configuració del servidor o una setmana; utilitzeu 0 per desactivar la data de caducitat.</string>
+  <string name="hostpref_mosh_network_timeout_error" tools:machine_translated="true">Introduïu un nombre enter entre 0 i 2147483647, o deixeu el camp en blanc.</string>
+  <string name="notification_channel_sessions" tools:machine_translated="true">Sessions actives</string>
+  <string name="notification_channel_attention" tools:machine_translated="true">Sessions que requereixen atenció.</string>
+  <string name="notification_channel_bells" tools:machine_translated="true">Senyals acústics del terminal</string>
+  <string name="notification_channel_connections" tools:machine_translated="true">Connexions perdudes</string>
+  <string name="pref_notification_channels_title" tools:machine_translated="true">Gestiona els canals de notificació a la secció de configuració.</string>
+  <string name="notification_summary" tools:machine_translated="true">%1$s · %2$s</string>
+  <string name="notification_connected" tools:machine_translated="true">Connectat</string>
+  <string name="notification_connecting" tools:machine_translated="true">S’està establint la connexió…</string>
+  <string name="notification_disconnected" tools:machine_translated="true">Desconnectat</string>
+  <string name="notification_bell" tools:machine_translated="true">So de terminal</string>
+  <string name="notification_session_detail" tools:machine_translated="true">%1$s: %2$s</string>
+  <string name="notification_event_time" tools:machine_translated="true">%1$s · %2$s</string>
+  <string name="notification_mark_seen" tools:machine_translated="true">Marca com a llegit.</string>
+  <string name="notification_mute_bells" tools:machine_translated="true">Silenciar els avisos acústics.</string>
+  <string name="pref_connection_lost_notification_title" tools:machine_translated="true">Notificacions de pèrdua de connexió.</string>
+  <string name="pref_connection_lost_notification_summary" tools:machine_translated="true">Mostra una finestra emergent sense so quan una sessió que no esteu visualitzant es desconnecta de manera inesperada.</string>
+  <plurals name="notification_connected_sessions" tools:machine_translated="true">
+    <item quantity="one">%d sessió connectada</item>
+    <item quantity="other">%d sessions connectades</item>
+    <item quantity="many">%d sessions connectades</item>
+  </plurals>
+  <plurals name="notification_attention_sessions" tools:machine_translated="true">
+    <item quantity="one">%d requereix atenció.</item>
+    <item quantity="other">%d requereixen atenció</item>
+    <item quantity="many">%d requereixen atenció</item>
+  </plurals>
+  <plurals name="notification_more_sessions" tools:machine_translated="true">
+    <item quantity="one">+%d sessió més</item>
+    <item quantity="other">+%d sessions més</item>
+    <item quantity="many">+%d sessions més</item>
   </plurals>
 </resources>

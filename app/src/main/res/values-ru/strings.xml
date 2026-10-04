@@ -103,7 +103,7 @@
   <string name="button_import">Импорт</string>
   <string name="font_importing">Импорт шрифта…</string>
   <string name="pref_backupkeys_title">Резервировать открытые ключи</string>
-  <string name="pref_backupkeys_summary">Сохранять резервные копии открытых ключей, используя механизм резервного копирования Android</string>
+  <string name="pref_backupkeys_summary">Сохранять резервные копии закрытых ключей, используя механизм резервного копирования Android</string>
   <string name="pref_ui_category">Пользовательский интерфейс</string>
   <string name="pref_language_title">Язык</string>
   <string name="pref_language_system_default">Системные настройки по умолчанию</string>
@@ -550,7 +550,7 @@
   <string name="pref_imetogglekey_title" tools:machine_translated="true">Отображать клавишу для переключения раскладки IME.</string>
   <string name="pref_imetogglekey_summary" tools:machine_translated="true">Добавьте кнопку для переключения метода ввода текста в строку специальных клавиш, чтобы можно было переключать режим ввода для языков, требующих буфер композиции (японский, китайский, корейский и т. д.).</string>
   <string name="pref_ime_shortcut_mode_title" tools:machine_translated="true">Сочетания клавиш Ctrl/Alt в полнофункциональном редакторе ввода.</string>
-  <string name="pref_ime_shortcut_mode_disabled" tools:machine_translated="true">Обходного решения нет.</string>
+  <string name="pref_ime_shortcut_mode_disabled" tools:machine_translated="true">Не использовать обходной способ</string>
   <string name="pref_ime_shortcut_mode_type_null" tools:machine_translated="true">Необработанные события нажатия клавиш.</string>
   <string name="pref_ime_shortcut_mode_force_ascii" tools:machine_translated="true">Принудительно использовать раскладку ASCII (рекомендуется)</string>
   <string name="pref_swipe_sessions_title" tools:machine_translated="true">Переключайтесь между сессиями с помощью жеста смахивания.</string>
@@ -578,7 +578,7 @@
   <string name="hostpref_mosh_port_summary" tools:machine_translated="true">Фиксированный порт UDP для Mosh (0 означает автоматический выбор в диапазоне 60000–61000).</string>
   <string name="hostpref_locale_title" tools:machine_translated="true">Региональные настройки</string>
   <string name="hostpref_locale_summary" tools:machine_translated="true">Языковая среда для сеанса Mosh (например, en_US.UTF-8).</string>
-  <string name="mosh_feature_title" tools:machine_translated="true">Поддержка Mosh (в динамическом модуле)</string>
+  <string name="mosh_feature_title" tools:machine_translated="true">Mosh</string>
   <string name="pref_mosh_release_title" tools:machine_translated="true">Версия программы Mosh и исходный код.</string>
   <string name="pref_mosh_installing" tools:machine_translated="true">Идет подготовка к установке поддержки Mosh…</string>
   <string name="editor_discard_changes_title" tools:machine_translated="true">Отменить изменения?</string>
@@ -619,10 +619,10 @@
   <string name="automation_cancel" tools:machine_translated="true">Отменить</string>
   <string name="automation_text" tools:machine_translated="true">Текст</string>
   <string name="automation_regex" tools:machine_translated="true">Регулярное выражение</string>
-  <string name="automation_regex_help" tools:machine_translated="true">Сопоставляет входящий текст без применения форматирования ANSI. Синтаксис регулярных выражений соответствует синтаксису RE2; поддержка поиска по шаблону и обратных ссылок отсутствует.</string>
+  <string name="automation_regex_help" tools:machine_translated="true">Сопоставляет входящий текст без форматирования ANSI. Регулярные выражения поддерживают синтаксис RE2; опережающие и ретроспективные проверки (lookaround) и обратные ссылки не поддерживаются.</string>
   <string name="automation_duration" tools:machine_translated="true">Продолжительность (в секундах)</string>
   <string name="automation_timeout" tools:machine_translated="true">Время ожидания (в секундах).</string>
-  <string name="automation_key" tools:machine_translated="true">Ключ</string>
+  <string name="automation_key" tools:machine_translated="true">Клавиша</string>
   <string name="automation_forward" tools:machine_translated="true">Переадресация портов</string>
   <string name="automation_failure" tools:machine_translated="true">В случае сбоя.</string>
   <string name="automation_stop" tools:machine_translated="true">Остановить автоматизацию.</string>
@@ -632,15 +632,15 @@
   <string name="automation_failure_step" tools:machine_translated="true">Действие №%1$d: %2$s</string>
   <string name="automation_cancel_run" tools:machine_translated="true">Отменить автоматизацию.</string>
   <string name="automation_key_enter" tools:machine_translated="true">Ввод</string>
-  <string name="automation_key_tab" tools:machine_translated="true">Вкладка</string>
-  <string name="automation_key_escape" tools:machine_translated="true">Выход</string>
+  <string name="automation_key_tab" tools:machine_translated="true">Tab</string>
+  <string name="automation_key_escape" tools:machine_translated="true">Esc</string>
   <string name="automation_key_backspace" tools:machine_translated="true">Клавиша «Назад» (удаление символа)</string>
   <string name="automation_key_delete" tools:machine_translated="true">Удалить</string>
   <string name="automation_key_up" tools:machine_translated="true">Стрелка вверх</string>
   <string name="automation_key_down" tools:machine_translated="true">Стрелка вниз</string>
   <string name="automation_key_left" tools:machine_translated="true">Стрелка влево</string>
   <string name="automation_key_right" tools:machine_translated="true">Стрелка вправо</string>
-  <string name="automation_key_home" tools:machine_translated="true">Главная</string>
+  <string name="automation_key_home" tools:machine_translated="true">Home</string>
   <string name="automation_key_end" tools:machine_translated="true">Конец</string>
   <string name="automation_key_insert" tools:machine_translated="true">Вставить</string>
   <string name="automation_key_page_up" tools:machine_translated="true">Переход на следующую страницу вверх</string>
@@ -650,6 +650,56 @@
   <string name="automation_seconds" tools:machine_translated="true">%1$.3f сек.</string>
   <plurals name="automation_count" tools:machine_translated="true">
     <item quantity="one">%1$d действие</item>
-    <item quantity="other">%1$d действий</item>
+    <item quantity="few">%1$d действия</item>
+    <item quantity="many">%1$d действий</item>
+    <item quantity="other">%1$d действия</item>
+  </plurals>
+  <string name="host_status_unread_output" tools:machine_translated="true">Непрочитанные данные</string>
+  <string name="host_status_user_disconnected" tools:machine_translated="true">Вы отключились от этого сервера.</string>
+  <string name="host_status_session_exit" tools:machine_translated="true">Удалённая сессия завершена.</string>
+  <string name="host_status_remote_closed" tools:machine_translated="true">Сервер разорвал соединение. Вы можете повторно подключиться.</string>
+  <string name="host_status_connection_lost" tools:machine_translated="true">Соединение прервалось. Вы можете повторить попытку подключения.</string>
+  <string name="host_status_network_lost" tools:machine_translated="true">Соединение с сетью прервалось. Пожалуйста, повторите попытку подключения, когда сеть станет доступна.</string>
+  <string name="host_status_auth_failed" tools:machine_translated="true">Ошибка аутентификации. Перед повторным подключением проверьте правильность имени пользователя, пароля или ключа.</string>
+  <string name="host_status_connection_ended" tools:machine_translated="true">Соединение прервано.</string>
+  <string name="host_status_action_required" tools:machine_translated="true">Необходимо проверить подключение.</string>
+  <string name="host_status_unread_explanation" tools:machine_translated="true">%1$s Откройте консоль, чтобы просмотреть оставшуюся часть вывода.</string>
+  <string name="pref_conn_persist_disabled_summary" tools:machine_translated="true">При переключении между приложениями Android может завершить работу ConnectBot и разорвать текущие соединения.</string>
+  <string name="hostpref_mosh_network_timeout_title" tools:machine_translated="true">Время ожидания сетевого подключения Mosh (в секундах)</string>
+  <string name="hostpref_mosh_network_timeout_summary" tools:machine_translated="true">Время, в течение которого сервер ожидает обновления от клиента перед завершением работы. Оставьте поле пустым, чтобы использовать настройку сервера или установить срок в одну неделю; используйте 0, чтобы отключить ограничение по времени.</string>
+  <string name="hostpref_mosh_network_timeout_error" tools:machine_translated="true">Введите целое число от 0 до 2147483647 или оставьте поле пустым.</string>
+  <string name="notification_channel_sessions" tools:machine_translated="true">Активные сеансы</string>
+  <string name="notification_channel_attention" tools:machine_translated="true">Сеансы, требующие внимания.</string>
+  <string name="notification_channel_bells" tools:machine_translated="true">Звуковые сигналы терминала</string>
+  <string name="notification_channel_connections" tools:machine_translated="true">Разорванные соединения.</string>
+  <string name="pref_notification_channels_title" tools:machine_translated="true">Управляйте каналами уведомлений в настройках.</string>
+  <string name="notification_summary" tools:machine_translated="true">%1$s · %2$s</string>
+  <string name="notification_connected" tools:machine_translated="true">Подключено</string>
+  <string name="notification_connecting" tools:machine_translated="true">Устанавливается соединение…</string>
+  <string name="notification_disconnected" tools:machine_translated="true">Сессия разорвана.</string>
+  <string name="notification_bell" tools:machine_translated="true">Звуковой сигнал терминала</string>
+  <string name="notification_session_detail" tools:machine_translated="true">%1$s: %2$s</string>
+  <string name="notification_event_time" tools:machine_translated="true">%1$s · %2$s</string>
+  <string name="notification_mark_seen" tools:machine_translated="true">Отметить как прочитанное</string>
+  <string name="notification_mute_bells" tools:machine_translated="true">Отключить звуковые сигналы.</string>
+  <string name="pref_connection_lost_notification_title" tools:machine_translated="true">Уведомления о разрыве соединения</string>
+  <string name="pref_connection_lost_notification_summary" tools:machine_translated="true">Отображать всплывающее уведомление без звука, когда сессия, которую вы не просматриваете, неожиданно прерывается.</string>
+  <plurals name="notification_connected_sessions" tools:machine_translated="true">
+    <item quantity="one">Подключён %d сеанс</item>
+    <item quantity="few">Подключено %d сеанса</item>
+    <item quantity="many">Подключено %d сеансов</item>
+    <item quantity="other">Подключено %d сеанса</item>
+  </plurals>
+  <plurals name="notification_attention_sessions" tools:machine_translated="true">
+    <item quantity="one">%d требует внимания</item>
+    <item quantity="few">%d требуют внимания</item>
+    <item quantity="many">%d требуют внимания</item>
+    <item quantity="other">%d требуют внимания</item>
+  </plurals>
+  <plurals name="notification_more_sessions" tools:machine_translated="true">
+    <item quantity="one">Ещё %d сеанс</item>
+    <item quantity="few">Ещё %d сеанса</item>
+    <item quantity="many">Ещё %d сеансов</item>
+    <item quantity="other">Ещё %d сеанса</item>
   </plurals>
 </resources>

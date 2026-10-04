@@ -358,7 +358,9 @@
 	<!-- Title for the preference that keeps the background service running to prevent connection drops. -->
 	<string name="pref_conn_persist_title">"Stay connected in the background"</string>
 	<!-- Summary for the preference that keeps the background service running to prevent connection drops. -->
-	<string name="pref_conn_persist_summary">"Keep your sessions open even when you switch to other apps"</string>
+	<string name="pref_conn_persist_summary">"Use an ongoing notification to keep sessions open when you switch apps"</string>
+	<!-- Warning shown below the background connection switch while it is off. -->
+	<string name="pref_conn_persist_disabled_summary">"Android may stop ConnectBot and disconnect your sessions when you switch apps"</string>
 
 	<!-- Name for the keyboard shortcuts preference -->
 	<string name="pref_keymode_title">"Directory shortcuts"</string>
@@ -405,8 +407,8 @@
 
 	<!-- Checkbox preference title for the receive notifications on terminal bell feature -->
 	<string name="pref_bell_notification_title">"Background notifications"</string>
-	<!-- Brief summary of the feature that is enabled when the checkbox preference for the receive notifications on terminal bell feature is checked -->
-	<string name="pref_bell_notification_summary">"Send notification when a terminal running in the background sounds a bell."</string>
+	<!-- Explains that bell notifications pop up without sound for any console other than the one being viewed. -->
+	<string name="pref_bell_notification_summary">"Show a soundless pop-up when a bell rings in a session you are not viewing."</string>
 
 	<!-- Preference selection to indicate use of right side of keyboard for special shortcuts. -->
 	<string name="list_keymode_right">"Use right-side keys"</string>
@@ -811,6 +813,12 @@
 	<string name="hostpref_mosh_port_title">"Mosh UDP port"</string>
 	<!-- Summary for the Mosh UDP port setting -->
 	<string name="hostpref_mosh_port_summary">"Fixed UDP port for mosh (0 for automatic 60000-61000 range)"</string>
+	<!-- Label for the server network timeout field in a Mosh host's advanced settings. -->
+	<string name="hostpref_mosh_network_timeout_title">Mosh network timeout (seconds)</string>
+	<!-- Help for Mosh timeout: blank respects the server setting or uses one week; zero disables expiry. -->
+	<string name="hostpref_mosh_network_timeout_summary">Time without client updates before the server exits. Leave blank for the server setting or one week; use 0 to disable expiry.</string>
+	<!-- Inline validation error for an invalid Mosh timeout in advanced host settings. -->
+	<string name="hostpref_mosh_network_timeout_error">Enter a whole number from 0 to 2147483647, or leave blank.</string>
 	<!-- Title for the Mosh locale setting -->
 	<string name="hostpref_locale_title">"Locale"</string>
 	<!-- Summary for the Mosh locale setting -->
@@ -1242,11 +1250,11 @@
 	<!-- Button text to open ConnectBot app settings page where user can grant notification permission. -->
 	<string name="open_settings">"Open settings"</string>
 
-	<!-- Snackbar shown on host list when notification permission was denied.
-	     Informs user that connections will drop when app is backgrounded. -->
-	<string name="notification_permission_denied_snackbar">"Connections may drop without notification permission"</string>
+	<!-- Snackbar shown on the host list when background connections are disabled or notification permission was denied.
+	     Its Settings action opens the background connection preference. -->
+	<string name="notification_permission_denied_snackbar">"Connections may drop when you switch apps"</string>
 
-	<!-- Snackbar shown on console screen when notification permission is denied and persist connections is enabled. -->
+	<!-- Snackbar shown on the console when background connections are disabled or notification permission was denied. -->
 	<string name="notification_permission_console_warning">"Connection may drop in background"</string>
 
 	<!-- Message shown to user when they're trying to connect to a host on a local network but

@@ -29,6 +29,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -66,6 +68,7 @@ import org.connectbot.terminal.TerminalDimensions
 import org.connectbot.terminal.TerminalEmulator
 import org.connectbot.terminal.TerminalEmulatorFactory
 import org.connectbot.ui.LocalTerminalManager
+import org.connectbot.ui.navigation.navigateToConsole
 import org.connectbot.ui.navigation.safePopBackStack
 import org.connectbot.ui.screens.console.ConsoleScreen
 import org.connectbot.ui.screens.console.ConsoleUiState
@@ -111,6 +114,7 @@ class ConsoleScreenTest {
         mockConsoleViewModel: ConsoleViewModel? = null,
         lifecycleOwner: LifecycleOwner = composeTestRule.activity,
         onAutomaticBack: () -> Unit = {},
+        keyboardController: SoftwareKeyboardController? = null,
     ) {
         composeTestRule.setContent {
             val context = LocalContext.current
@@ -123,6 +127,7 @@ class ConsoleScreenTest {
                 CompositionLocalProvider(
                     LocalTerminalManager provides mockTerminalManager,
                     LocalLifecycleOwner provides lifecycleOwner,
+                    LocalSoftwareKeyboardController provides (keyboardController ?: LocalSoftwareKeyboardController.current),
                 ) {
                     NavHost(navController = navController, startDestination = "start") {
                         composable("start") { Text("Host list") }
@@ -158,6 +163,34 @@ class ConsoleScreenTest {
     private fun navigateToConsoleScreen(hostId: Long = -1L) {
         composeTestRule.runOnUiThread {
             navController.navigate("console/$hostId")
+        }
+    }
+
+    @Test
+    fun notificationNavigation_switchesSessionsWithoutReusingTheirViewModelEntry() {
+        composeTestRule.setContent {
+            val context = LocalContext.current
+            navController = remember {
+                TestNavHostController(context).apply {
+                    navigatorProvider.addNavigator(ComposeNavigator())
+                }
+            }
+            NavHost(navController, startDestination = "start") {
+                composable("start") {}
+                composable("console/{hostId}", arguments = listOf(navArgument("hostId") { type = NavType.LongType })) {}
+            }
+        }
+        composeTestRule.runOnIdle {
+            navController.navigateToConsole(-1L)
+            val firstEntry = navController.currentBackStackEntry!!.id
+            navController.navigateToConsole(-2L)
+            val secondEntry = navController.currentBackStackEntry!!.id
+            assertFalse(firstEntry == secondEntry)
+            assertEquals(-2L, navController.currentBackStackEntry!!.arguments!!.getLong("hostId"))
+            navController.navigateToConsole(-2L)
+            assertEquals(secondEntry, navController.currentBackStackEntry!!.id)
+            navController.popBackStack()
+            assertEquals(firstEntry, navController.currentBackStackEntry!!.id)
         }
     }
 
@@ -365,13 +398,70 @@ class ConsoleScreenTest {
         }
     }
 
+    private class RecordingKeyboardController : SoftwareKeyboardController {
+        var visible = false
+        override fun show() {
+            visible = true
+        }
+        override fun hide() {
+            visible = false
+        }
+    }
+
     @Test
-    fun consoleScreen_displaysTextInputButton() {
+    fun consoleScreen_backButtonHidesKeyboardBeforeNavigating() {
+        val keyboard = RecordingKeyboardController()
+        val viewModel = mock(ConsoleViewModel::class.java)
+        `when`(viewModel.uiState).thenReturn(MutableStateFlow(ConsoleUiState()))
+        `when`(viewModel.networkStatusMessages).thenReturn(MutableSharedFlow())
+        var navigationCount = 0
+        setContent(
+            mockConsoleViewModel = viewModel,
+            keyboardController = keyboard,
+            onAutomaticBack = {
+                assertFalse("Hide the keyboard before leaving the console", keyboard.visible)
+                navigationCount++
+            },
+        )
+        navigateToConsoleScreen()
+        composeTestRule.runOnIdle { keyboard.show() }
+        composeTestRule.onNodeWithContentDescription("Back").performClick()
+        composeTestRule.onNodeWithText("Host list").assertIsDisplayed()
+        composeTestRule.runOnIdle { assertEquals(1, navigationCount) }
+    }
+
+    @Test
+    fun consoleScreen_lastSessionClosedHidesKeyboardBeforeNavigating() {
+        val keyboard = RecordingKeyboardController()
+        val states = MutableStateFlow(ConsoleUiState())
+        val viewModel = mock(ConsoleViewModel::class.java)
+        `when`(viewModel.uiState).thenReturn(states)
+        `when`(viewModel.networkStatusMessages).thenReturn(MutableSharedFlow())
+        var navigationCount = 0
+        setContent(
+            mockConsoleViewModel = viewModel,
+            keyboardController = keyboard,
+            onAutomaticBack = {
+                assertFalse("Hide the keyboard before leaving the console", keyboard.visible)
+                navigationCount++
+            },
+        )
+        navigateToConsoleScreen()
+        composeTestRule.runOnIdle {
+            keyboard.show()
+            states.value = ConsoleUiState(isLoading = false)
+        }
+        composeTestRule.onNodeWithText("Host list").assertIsDisplayed()
+        composeTestRule.runOnIdle { assertEquals(1, navigationCount) }
+    }
+
+    @Test
+    fun consoleScreen_displaysTitleBarTextInputButton() {
         setContent()
         navigateToConsoleScreen()
 
         composeTestRule
-            .onNodeWithContentDescription("Text input")
+            .onNodeWithTag("title_bar_text_input")
             .assertIsDisplayed()
     }
 

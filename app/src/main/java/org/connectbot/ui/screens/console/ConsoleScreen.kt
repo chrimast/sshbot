@@ -87,6 +87,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
@@ -118,6 +119,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -146,6 +148,7 @@ import org.connectbot.service.AuthBanner
 import org.connectbot.service.DisconnectReason
 import org.connectbot.service.PromptRequest
 import org.connectbot.service.TerminalBridge
+import org.connectbot.service.descriptionResource
 import org.connectbot.terminal.ComposeController
 import org.connectbot.terminal.ImeShortcutInputMode
 import org.connectbot.terminal.ProgressState
@@ -487,7 +490,6 @@ private fun ConsoleTerminalPage(
                     onShowIme = {
                         onShowSoftwareKeyboardChange(true)
                     },
-                    onOpenTextInput = onTextInputRequest,
                     onScrollInProgressChange = onKeyboardScrollInProgressChange,
                     imeVisible = imeVisible,
                     playAnimation = !hasPlayedKeyboardAnimation,
@@ -528,7 +530,7 @@ private fun ConsoleTerminalPage(
                         .padding(16.dp),
                 ) {
                     Text(
-                        text = stringResource(R.string.alert_disconnect_msg),
+                        text = stringResource(bridge.disconnectReason.descriptionResource()),
                         style = MaterialTheme.typography.bodyLarge,
                         color = terminalColors.overlayText,
                         modifier = Modifier.padding(bottom = 16.dp),
@@ -571,7 +573,6 @@ fun ConsoleScreen(
     val coroutineScope = rememberCoroutineScope()
 
     // Capture latest callback for use in effects
-    val currentOnNavigateBack by rememberUpdatedState(onNavigateBack)
     val currentOnNavigateToSettings by rememberUpdatedState(onNavigateToSettings)
 
     LaunchedEffect(terminalManager) {
@@ -604,6 +605,16 @@ fun ConsoleScreen(
     // Keyboard state
     val hasHardwareKeyboard = rememberHasHardwareKeyboard()
     var showSoftwareKeyboard by remember { mutableStateOf(!hasHardwareKeyboard) }
+
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val navigateBack: () -> Unit = {
+        // Hide while the console still owns input; disposal may run after focus
+        // has moved, when the terminal's guarded IME cleanup cannot hide it.
+        showSoftwareKeyboard = false
+        keyboardController?.hide()
+        onNavigateBack()
+    }
+    val currentOnNavigateBack by rememberUpdatedState(navigateBack)
 
     var rotation by remember(hasHardwareKeyboard) {
         val prefValue = prefs.getString(PreferenceConstants.ROTATION, PreferenceConstants.ROTATION_DEFAULT)
@@ -1229,7 +1240,7 @@ fun ConsoleScreen(
                         titleBarHeight = with(density) { it.height.toDp() }
                     },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = navigateBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             stringResource(R.string.button_back),
