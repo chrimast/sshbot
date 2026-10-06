@@ -192,7 +192,7 @@ fun SettingsScreen(
         highlightItem = highlightItem,
         onAuthOnLaunchChange = viewModel::updateAuthOnLaunch,
         onMemkeysChange = viewModel::updateMemkeys,
-        onConnPersistChange = viewModel::updateConnPersist,
+        onConnectionAlertsChange = viewModel::updateConnectionAlerts,
         onWifilockChange = viewModel::updateWifilock,
         onBackupkeysChange = viewModel::updateBackupkeys,
         onScrollbackChange = viewModel::updateScrollback,
@@ -248,7 +248,7 @@ fun SettingsScreenContent(
     onNavigateBack: () -> Unit,
     onAuthOnLaunchChange: (Boolean) -> Unit,
     onMemkeysChange: (Boolean) -> Unit,
-    onConnPersistChange: (Boolean) -> Unit,
+    onConnectionAlertsChange: (Boolean) -> Unit,
     onWifilockChange: (Boolean) -> Unit,
     onBackupkeysChange: (Boolean) -> Unit,
     onScrollbackChange: (String) -> Unit,
@@ -310,15 +310,15 @@ fun SettingsScreenContent(
         modifier = modifier,
     ) { padding ->
         val listState = rememberLazyListState()
-        var highlightConnPersist by remember { mutableStateOf(false) }
-        val connPersistHighlightColor by animateColorAsState(
-            targetValue = if (highlightConnPersist) {
+        var highlightConnectionAlerts by remember { mutableStateOf(false) }
+        val connectionAlertsHighlightColor by animateColorAsState(
+            targetValue = if (highlightConnectionAlerts) {
                 MaterialTheme.colorScheme.primaryContainer
             } else {
                 Color.Transparent
             },
             animationSpec = tween(durationMillis = 500),
-            label = "connPersistHighlight",
+            label = "connectionAlertsHighlight",
         )
 
         LaunchedEffect(highlightItem) {
@@ -328,9 +328,9 @@ fun SettingsScreenContent(
                 val connPersistIndex = if (uiState.canAuthenticate) 0 else 1
                 listState.animateScrollToItem(connPersistIndex)
                 delay(300)
-                highlightConnPersist = true
+                highlightConnectionAlerts = true
                 delay(1500)
-                highlightConnPersist = false
+                highlightConnectionAlerts = false
             }
         }
 
@@ -1747,7 +1747,7 @@ private fun SettingsScreenPreview() {
                 authOnLaunch = false,
                 canAuthenticate = true,
                 memkeys = true,
-                connPersist = true,
+                connectionAlerts = true,
                 wifilock = false,
                 backupkeys = true,
                 scrollback = "500",
@@ -1783,7 +1783,7 @@ private fun SettingsScreenPreview() {
             onNavigateBack = {},
             onAuthOnLaunchChange = {},
             onMemkeysChange = {},
-            onConnPersistChange = {},
+            onConnectionAlertsChange = {},
             onWifilockChange = {},
             onBackupkeysChange = {},
             onScrollbackChange = {},

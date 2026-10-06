@@ -58,8 +58,6 @@ fun ConnectBotNavHost(
     startDestination: String = NavDestinations.HOST_LIST,
     makingShortcut: Boolean = false,
     onSelectShortcut: (Host, String?, IconStyle) -> Unit = { _, _, _ -> },
-    shouldShowNotificationWarning: () -> Boolean = { false },
-    onNotificationSnackbarFinish: () -> Unit = {},
 ) {
     NavHost(
         navController = navController,
@@ -81,9 +79,6 @@ fun ConnectBotNavHost(
                 onNavigateToSettings = {
                     navController.navigateSafely(NavDestinations.SETTINGS)
                 },
-                onNavigateToSettingsHighlightConnPersist = {
-                    navController.navigateSafely(NavDestinations.SETTINGS_HIGHLIGHT_CONN_PERSIST)
-                },
                 onNavigateToPubkeys = {
                     navController.navigateSafely(NavDestinations.PUBKEY_LIST)
                 },
@@ -99,8 +94,6 @@ fun ConnectBotNavHost(
                 onNavigateToHelp = {
                     navController.navigateSafely(NavDestinations.HELP)
                 },
-                shouldShowNotificationWarning = shouldShowNotificationWarning,
-                onNotificationSnackbarFinish = onNotificationSnackbarFinish,
             )
         }
 

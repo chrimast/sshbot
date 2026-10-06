@@ -57,10 +57,8 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -71,7 +69,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -122,11 +119,8 @@ fun HostListScreen(
     onNavigateToPresetScripts: () -> Unit = {},
     onNavigateToHelp: () -> Unit,
     modifier: Modifier = Modifier,
-    onNavigateToSettingsHighlightConnPersist: () -> Unit = {},
     makingShortcut: Boolean = false,
     onSelectShortcut: (Host, String?, IconStyle) -> Unit = { _, _, _ -> },
-    shouldShowNotificationWarning: () -> Boolean = { false },
-    onNotificationSnackbarFinish: () -> Unit = {},
     viewModel: HostListViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -262,7 +256,6 @@ fun HostListScreen(
         onSelectShortcut = { host -> shortcutHost = host },
         onNavigateToEditHost = onNavigateToEditHost,
         onNavigateToSettings = onNavigateToSettings,
-        onNavigateToSettingsHighlightConnPersist = onNavigateToSettingsHighlightConnPersist,
         onNavigateToPubkeys = onNavigateToPubkeys,
         onNavigateToPortForwards = onNavigateToPortForwards,
         onNavigateToProfiles = onNavigateToProfiles,
@@ -277,8 +270,6 @@ fun HostListScreen(
         onExportHosts = viewModel::exportHosts,
         // Some document providers label JSON exports as text/plain or application/octet-stream.
         onImportHosts = { importLauncher.launch(arrayOf("*/*")) },
-        shouldShowNotificationWarning = shouldShowNotificationWarning,
-        onNotificationSnackbarFinish = onNotificationSnackbarFinish,
         modifier = modifier,
     )
 }
@@ -304,11 +295,8 @@ fun HostListScreenContent(
     modifier: Modifier = Modifier,
     makingShortcut: Boolean = false,
     onSelectShortcut: (Host) -> Unit = {},
-    onNavigateToSettingsHighlightConnPersist: () -> Unit = {},
     onExportHosts: () -> Unit = {},
     onImportHosts: () -> Unit = {},
-    shouldShowNotificationWarning: () -> Boolean = { false },
-    onNotificationSnackbarFinish: () -> Unit = {},
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showDisconnectAllDialog by remember { mutableStateOf(false) }
@@ -321,28 +309,6 @@ fun HostListScreenContent(
                 message = error,
                 withDismissAction = true,
             )
-        }
-    }
-
-    val notificationDeniedMessage = stringResource(R.string.notification_permission_denied_snackbar)
-    val settingsLabel = stringResource(R.string.list_menu_settings)
-    val currentShouldShowNotificationWarning by rememberUpdatedState(shouldShowNotificationWarning)
-    val currentOnNavigateToSettingsHighlightConnPersist by rememberUpdatedState(onNavigateToSettingsHighlightConnPersist)
-    val currentOnNotificationSnackbarFinish by rememberUpdatedState(onNotificationSnackbarFinish)
-
-    // Show snackbar once per launch when connections won't persist in the background
-    LaunchedEffect(Unit) {
-        if (currentShouldShowNotificationWarning()) {
-            val result = snackbarHostState.showSnackbar(
-                message = notificationDeniedMessage,
-                actionLabel = settingsLabel,
-                withDismissAction = true,
-                duration = SnackbarDuration.Long,
-            )
-            if (result == SnackbarResult.ActionPerformed) {
-                currentOnNavigateToSettingsHighlightConnPersist()
-            }
-            currentOnNotificationSnackbarFinish()
         }
     }
 
