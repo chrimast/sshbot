@@ -675,6 +675,38 @@
 
 	<!-- Menu item to open the pubkey management screen -->
 	<string name="list_menu_pubkeys">"Manage pubkeys"</string>
+	<!-- Title of the screen listing trusted SSH host keys -->
+	<string name="known_hosts_title">Known hosts</string>
+	<!-- Host editor action opening the trusted SSH host keys for the current host -->
+	<string name="hostpref_known_hosts_title">Known host keys</string>
+	<!-- Host editor explanation for managing trusted SSH host keys -->
+	<string name="hostpref_known_hosts_summary">View, import, or remove keys trusted for this host</string>
+	<!-- Empty-state message when no SSH host keys have been trusted yet -->
+	<string name="known_hosts_empty">No known hosts.</string>
+	<!-- Label identifying the SSH host key algorithm in the known-host list -->
+	<string name="known_host_algorithm">Algorithm: %1$s</string>
+	<!-- Accessible description for the button that deletes one trusted SSH host key -->
+	<string name="known_host_delete">Delete known host</string>
+	<!-- Confirmation button label for deleting one trusted SSH host key -->
+	<string name="known_host_delete_confirm">Delete</string>
+	<!-- Title of the confirmation dialog shown before deleting a trusted SSH host key -->
+	<string name="known_host_delete_title">Delete known host?</string>
+	<!-- Confirmation text shown before deleting a trusted SSH host key. The parameter is a hostname and port. -->
+	<string name="known_host_delete_message">The key for %1$s will need to be verified again the next time you connect.</string>
+	<!-- Generic error shown when a trusted SSH host key cannot be loaded or deleted -->
+	<string name="known_hosts_error">Unable to update known hosts</string>
+	<!-- Accessible description for the action that imports a trusted SSH host public key -->
+	<string name="known_host_import">Import host key</string>
+	<!-- Title of the dialog for importing a trusted SSH host public key -->
+	<string name="known_host_import_title">Import host key</string>
+	<!-- Label for the OpenSSH public-key text field in the trusted host-key import dialog -->
+	<string name="known_host_import_key_label">OpenSSH public key</string>
+	<!-- Help text for importing a complete trusted SSH host public key received out of band -->
+	<string name="known_host_import_help">Paste the complete public key, such as “ssh-ed25519 AAAA…”. A fingerprint alone cannot be imported.</string>
+	<!-- Validation error shown when pasted trusted SSH host public-key text is invalid -->
+	<string name="known_host_import_invalid">Enter a valid OpenSSH public key. The algorithm and encoded key must match.</string>
+	<!-- Confirmation button label for importing a trusted SSH host public key -->
+	<string name="known_host_import_confirm">Import</string>
 	<!-- Selection choice to sort hosts by color. -->
 	<string name="list_menu_sortcolor">"Sort by color"</string>
 	<!-- Selection choice to sort hosts by nickname. -->
@@ -1341,6 +1373,26 @@
 	<string name="logs_bug_report_info">To report a bug, copy these logs and open a new issue at https://connectbot.org/bug</string>
 	<!-- Message shown when no logs are available -->
 	<string name="no_logs_available">No logs available</string>
+	<!-- Heading in View Logs for up to ten retained process exit records, newest first. -->
+	<string name="logs_exit_history">Recent process exits</string>
+	<!-- Message in View Logs when Android retains no process exit records. -->
+	<string name="logs_exit_history_empty">No process exit records available</string>
+	<!-- Message in View Logs when Android cannot provide the process exit history. -->
+	<string name="logs_exit_history_unavailable">Process exit history unavailable</string>
+	<!-- Fallback description for a process exit record with no system explanation. -->
+	<string name="logs_exit_description_unavailable">No description available</string>
+	<!-- Process exit diagnostic block: UTC time, process name, PID, Android reason name and code, exit status or signal, system description, and last sampled PSS/RSS memory in kB. Reason names are Android identifiers. -->
+	<string name="logs_exit_details">Time: %1$s\nProcess: %2$s (PID %3$d)\nReason: %4$s (%5$d)\nStatus/signal: %6$d\nDescription: %7$s\nLast sampled memory: PSS %8$d kB, RSS %9$d kB</string>
+	<!-- Button in View Logs opening the system file picker to save a native crash report. -->
+	<string name="save_tombstone">Save Tombstone</string>
+	<!-- Explanation of the optional native crash report export in View Logs. -->
+	<string name="tombstone_save_info">Save the most recent available native crash report to a location you choose.</string>
+	<!-- Confirmation after saving the raw native crash report to the chosen file. -->
+	<string name="tombstone_saved">Tombstone saved</string>
+	<!-- Message when Android no longer retains a native crash report for this app. -->
+	<string name="tombstone_unavailable">No native crash report is available. Android may have already removed it.</string>
+	<!-- Message when reading or saving the native crash report fails. -->
+	<string name="tombstone_save_failed">Could not save tombstone</string>
 
 	<!-- Section title for the "Help" screen showing information about the program itself. -->
 	<string name="help_section_about">About</string>
