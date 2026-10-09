@@ -256,7 +256,7 @@ android {
     }
 
     lint {
-        abortOnError = false
+        abortOnError = true
         lintConfig = file("lint.xml")
         checkTestSources = true
     }
