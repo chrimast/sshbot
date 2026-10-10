@@ -4,7 +4,7 @@ androidGradlePlugin = "9.4.1"
 kotlin = "2.4.20"
 spotless = "8.10.3"
 easylauncher = "6.4.1"
-pythonUv = "0.4.29"
+pythonUv = "0.4.30"
 appVersioning = "1.6.0"
 room = "2.8.5"
 ksp = "2.3.12"
@@ -17,12 +17,13 @@ minSdk = "24"
 targetSdk = "36"
 
 composeBom = "2026.09.00"
-material3 = "1.5.0-alpha25"
+material3 = "1.5.0-beta01"
 lifecycleViewModel = "2.11.0"
 navigationCompose = "2.10.2"
+navigationEvent = "1.2.0"
 activityCompose = "1.13.0"
 
-sshlib = "2.2.49"
+sshlib = "2.2.50"
 termlib = "0.3.11"
 playServicesBasement = "18.12.0"
 playFeatureDelivery = "2.1.0"
@@ -102,6 +103,8 @@ androidx-compose-material-icons-extended = { module = "androidx.compose.material
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewModel" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycleViewModel" }
 androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", version.ref = "lifecycleViewModel" }
+androidx-navigationevent-core = { module = "androidx.navigationevent:navigationevent", version.ref = "navigationEvent" }
+androidx-navigationevent-compose = { module = "androidx.navigationevent:navigationevent-compose", version.ref = "navigationEvent" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 

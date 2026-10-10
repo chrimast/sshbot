@@ -29,8 +29,10 @@ import java.nio.CharBuffer
 import java.nio.charset.Charset
 import java.nio.charset.CharsetDecoder
 import java.nio.charset.CharsetEncoder
+import java.nio.charset.CoderMalfunctionError
 import java.nio.charset.CodingErrorAction
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Coroutine-based relay that handles incoming data from the transport to the terminal buffer.
@@ -45,8 +47,11 @@ class Relay(
     encoding: String,
 ) {
 
-    private var currentCharset: Charset? = null
-    private var decoder: CharsetDecoder? = null
+    private val running = AtomicBoolean()
+
+    @Volatile private var currentCharset: Charset? = null
+
+    @Volatile private var decoder: CharsetDecoder? = null
 
     private val encoder: CharsetEncoder = StandardCharsets.UTF_8.newEncoder().apply {
         onMalformedInput(CodingErrorAction.REPLACE)
@@ -100,15 +105,15 @@ class Relay(
      * This is a suspend function that runs on IO dispatcher.
      */
     suspend fun start() = withContext(dispatchers.io) {
-        decoder?.reset()
-        encoder.reset()
-        sourceBuffer.clear()
-        charBuffer.clear()
-        destBuffer.clear()
-
-        var endOfInput = false
+        if (!running.compareAndSet(false, true)) return@withContext
 
         try {
+            decoder?.reset()
+            encoder.reset()
+            sourceBuffer.clear()
+            charBuffer.clear()
+            destBuffer.clear()
+            var endOfInput = false
             while (isActive && !endOfInput) {
                 val currentDecoder = decoder ?: continue
 
@@ -178,8 +183,12 @@ class Relay(
             }
         } catch (e: IOException) {
             Timber.e(e, "Problem while handling incoming data in relay")
+        } catch (e: CoderMalfunctionError) {
+            Timber.e(e, "Charset decoder failed while handling incoming data")
+            bridge.dispatchDisconnect(DisconnectReason.IO_ERROR)
         } finally {
             bridge.cancelAutomation()
+            running.set(false)
         }
     }
 

@@ -247,6 +247,8 @@ fun PubkeyListScreen(
     if (pendingNicknameConfirmation != null) {
         NicknameConfirmationDialog(
             initialNickname = pendingNicknameConfirmation.nickname,
+            isSaving = uiState.isSavingImportNickname,
+            error = uiState.importNicknameError,
             onDismiss = { viewModel.cancelImportNickname() },
             onConfirm = { nickname -> viewModel.confirmImportNickname(nickname) },
         )
@@ -891,6 +893,8 @@ private fun PubkeyDeleteDialog(
 @Composable
 private fun NicknameConfirmationDialog(
     initialNickname: String,
+    isSaving: Boolean,
+    error: String?,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {

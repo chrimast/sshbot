@@ -521,6 +521,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.navigationevent.core)
+    implementation(libs.androidx.navigationevent.compose)
     implementation(libs.androidx.activity.compose)
 
     implementation(libs.coil.compose)
