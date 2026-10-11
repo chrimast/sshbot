@@ -68,6 +68,7 @@ import org.connectbot.data.sync.SyncBaselineDao
  * - Version 10: Added mosh_port, mosh_server, and locale columns to hosts for Mosh support (AutoMigration)
  * - Version 11: UUID automation actions and port-forward startup preference (manual migration)
  * - Version 12: Added optional Mosh network timeout to hosts (AutoMigration)
+ * - Version 13: Added bold_as_bright to profiles, defaulting to enabled (AutoMigration)
  * - Future versions: Use Room AutoMigration when possible for simple schema changes
  *
  * Security Considerations:
@@ -98,6 +99,7 @@ import org.connectbot.data.sync.SyncBaselineDao
         AutoMigration(from = 8, to = 9),
         AutoMigration(from = 9, to = 10),
         AutoMigration(from = 11, to = 12),
+        AutoMigration(from = 12, to = 13),
     ],
 )
 @TypeConverters(Converters::class)
