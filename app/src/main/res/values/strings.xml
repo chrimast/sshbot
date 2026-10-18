@@ -564,6 +564,46 @@
 	<!-- Default name shown for the default color scheme when no specific scheme is selected -->
 	<string name="colorscheme_default">Default</string>
 
+	<!-- Telnet options -->
+	<!-- Telnet advanced connection setting: local display of typed input. -->
+	<string name="telnet_echo_title">Local echo</string>
+	<!-- Explains the Telnet local echo override. -->
+	<string name="telnet_echo_summary">Choose whether typed input is displayed locally. Always on may duplicate text when the server echoes.</string>
+	<!-- Telnet echo choice: follow the server’s negotiated echo mode. -->
+	<string name="telnet_echo_auto">Automatic</string>
+	<!-- Telnet echo choice: always display typed input locally. -->
+	<string name="telnet_echo_on">Always on</string>
+	<!-- Telnet echo choice: never display typed input locally. -->
+	<string name="telnet_echo_off">Always off</string>
+	<!-- Telnet advanced connection setting: when to request capabilities. -->
+	<string name="telnet_negotiation_title">Negotiation startup</string>
+	<!-- Explains Telnet interactive and passive startup. -->
+	<string name="telnet_negotiation_summary">Negotiate terminal capabilities on connect, or wait for the server to request them.</string>
+	<!-- Telnet startup choice: request BINARY and offer terminal capabilities. -->
+	<string name="telnet_negotiation_interactive">Negotiate on connect</string>
+	<!-- Telnet startup choice: respond to server requests without initiating negotiation. -->
+	<string name="telnet_negotiation_passive">Wait for server</string>
+	<!-- Telnet advanced connection setting for servers that refuse BINARY. -->
+	<string name="telnet_nonbinary_title">Nonbinary data</string>
+	<!-- Explains the Telnet nonbinary compatibility policy. -->
+	<string name="telnet_nonbinary_summary">If the server refuses binary mode, allow legacy eight-bit bytes or require ASCII. Both ends must use the same encoding.</string>
+	<!-- Telnet compatibility choice: permit non-ASCII bytes without BINARY. -->
+	<string name="telnet_nonbinary_legacy">Allow legacy eight-bit bytes</string>
+	<!-- Telnet compatibility choice: reject non-ASCII writes without BINARY. -->
+	<string name="telnet_nonbinary_ascii">Require ASCII</string>
+	<!-- Telnet advanced connection setting: LF handling for application text. -->
+	<string name="telnet_newline_title">Pasted line endings</string>
+	<!-- Explains the Telnet application newline policy. -->
+	<string name="telnet_newline_summary">Outside binary mode, convert pasted LF to CRLF or preserve LF. Also applies to automation text.</string>
+	<!-- Telnet newline choice: convert bare LF outside binary mode. -->
+	<string name="telnet_newline_crlf">Convert LF to CRLF</string>
+	<!-- Telnet newline choice: keep bare LF outside binary mode. -->
+	<string name="telnet_newline_lf">Preserve LF</string>
+	<!-- Console snackbar when strict Telnet ASCII policy rejects user input. -->
+	<string name="telnet_ascii_input_rejected">Input was not sent. This connection requires ASCII until the server enables binary mode.</string>
+	<!-- Console snackbar when the Telnet session rejects an unsupported input operation. -->
+	<string name="telnet_input_rejected">Input could not be sent to this Telnet server.</string>
+
 	<!-- Profile editor screen strings -->
 	<!-- Window title shown when creating a new profile -->
 	<string name="profile_editor_title_new">New Profile</string>
@@ -766,6 +806,10 @@
 	<string name="terminal_sucess">"Verified host '%1$s' key: %2$s"</string>
 	<!-- Error message shown in terminal when host key verification fails -->
 	<string name="terminal_failed">"Host key verification failed."</string>
+	<!-- Error message shown in terminal when an SSH connection attempt fails without a more specific message -->
+	<string name="terminal_connection_failed">"Connection failed."</string>
+	<!-- Message shown in terminal when an SSH connection succeeds -->
+	<string name="terminal_connected">"Connected."</string>
 
 	<!-- Displayed on the terminal describing the cryptographic algorithm names -->
 	<string name="terminal_using_s2c_algorithm">"Server-to-client algorithm: %1$s %2$s"</string>
@@ -781,6 +825,8 @@
 
 	<!-- Message shown in terminal when starting authentication process -->
 	<string name="terminal_auth">"Trying to authenticate"</string>
+	<!-- Message shown in the terminal after the SSH server confirms authentication succeeded. -->
+	<string name="terminal_auth_success">Authentication successful.</string>
 	<!-- Header shown before an SSH authentication banner in the terminal. Parameter is the host or jump host name. -->
 	<string name="terminal_auth_banner_header">"[%1$s] Authentication message:"</string>
 
@@ -814,6 +860,12 @@
 	<!-- Error message shown when server doesn't support any of the authentication methods we can use -->
 	<string name="terminal_auth_fail">"[Your host doesn't support 'password' or 'keyboard-interactive' authentication.]"</string>
 
+	<!-- Terminal diagnostic when the SSH server cannot open a session channel. -->
+	<string name="terminal_session_failed">Unable to open an SSH session.</string>
+	<!-- Terminal diagnostic when the SSH server rejects the requested terminal. -->
+	<string name="terminal_pty_rejected">The SSH server rejected the terminal request.</string>
+	<!-- Terminal diagnostic when the SSH server rejects starting an interactive shell. -->
+	<string name="terminal_shell_rejected">The SSH server rejected the shell request.</string>
 	<!-- Message shown in terminal when shell session is not started because user disabled it in host settings -->
 	<string name="terminal_no_session">"Session will not be started due to host preference."</string>
 	<!-- Message shown in terminal when a port forward is enabled. Parameter is the port forward description. -->

@@ -17,21 +17,26 @@
 
 package org.connectbot.service
 
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import org.apache.harmony.niochar.charset.additional.IBM437
 import org.connectbot.di.CoroutineDispatchers
+import org.connectbot.telnetlib.TelnetInput
+import org.connectbot.telnetlib.TelnetOutcome
 import org.connectbot.transport.AbsTransport
+import org.connectbot.transport.Telnet
+import org.connectbot.transport.TelnetOperationException
 import timber.log.Timber
 import java.io.IOException
 import java.nio.ByteBuffer
-import java.nio.CharBuffer
 import java.nio.charset.Charset
-import java.nio.charset.CharsetDecoder
-import java.nio.charset.CharsetEncoder
 import java.nio.charset.CoderMalfunctionError
-import java.nio.charset.CodingErrorAction
-import java.nio.charset.StandardCharsets
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -40,155 +45,155 @@ import java.util.concurrent.atomic.AtomicBoolean
  *
  * @author Kenny Root
  */
-class Relay(
+class Relay private constructor(
     private val bridge: TerminalBridge,
     private val transport: AbsTransport,
     private val dispatchers: CoroutineDispatchers,
     encoding: String,
+    private val streamRead: (suspend (ByteArray, Int, Int) -> Int)?,
+    private val manageAutomation: Boolean,
+    private val outputLock: Mutex,
 ) {
 
     private val running = AtomicBoolean()
 
-    @Volatile private var currentCharset: Charset? = null
+    constructor(
+        bridge: TerminalBridge,
+        transport: AbsTransport,
+        dispatchers: CoroutineDispatchers,
+        encoding: String,
+    ) : this(bridge, transport, dispatchers, encoding, null, true, Mutex())
 
-    @Volatile private var decoder: CharsetDecoder? = null
+    private val streamRelays = CopyOnWriteArrayList<Relay>()
 
-    private val encoder: CharsetEncoder = StandardCharsets.UTF_8.newEncoder().apply {
-        onMalformedInput(CodingErrorAction.REPLACE)
-        onUnmappableCharacter(CodingErrorAction.REPLACE)
-    }
+    @Volatile
+    private var currentEncoding = encoding
 
-    private val sourceBuffer = ByteBuffer.allocate(BUFFER_SIZE)
-    private val charBuffer = CharBuffer.allocate(BUFFER_SIZE)
-    private val destBuffer = ByteBuffer.allocate(BUFFER_SIZE)
+    private val decoder = RelayDecoder(
+        encoding,
+        onText = { if (bridge.transport === transport) bridge.onAutomationOutput(it) },
+        onBytes = { bytes ->
+            if (bridge.transport === transport) {
+                bridge.onOutputReceived()
+                bridge.terminalEmulator.writeInput(bytes, 0, bytes.size)
+            }
+        },
+    )
 
-    init {
-        setCharset(encoding)
-    }
-
-    /**
-     * Set the character set for decoding incoming data.
-     *
-     * @param encoding the character set name (e.g., "UTF-8", "CP437")
-     */
     fun setCharset(encoding: String) {
-        Timber.d("changing charset to $encoding")
-
-        val charset = if (encoding == "CP437") {
-            IBM437("IBM437", arrayOf("IBM437", "CP437"))
-        } else {
-            Charset.forName(encoding)
-        }
-
-        if (charset == currentCharset) {
-            return
-        }
-
-        val newCd = charset.newDecoder().apply {
-            onUnmappableCharacter(CodingErrorAction.REPLACE)
-            onMalformedInput(CodingErrorAction.REPLACE)
-        }
-
-        currentCharset = charset
-        decoder = newCd
+        currentEncoding = encoding
+        decoder.setCharset(encoding)
+        streamRelays.forEach { it.setCharset(encoding) }
     }
 
-    /**
-     * Get the current character set.
-     *
-     * @return the current Charset
-     */
-    fun getCharset(): Charset? = currentCharset
+    fun getCharset(): Charset = decoder.charset
 
     /**
      * Start relaying data from transport to terminal buffer.
      * This is a suspend function that runs on IO dispatcher.
      */
-    suspend fun start() = withContext(dispatchers.io) {
+    suspend fun start(): Unit = withContext(dispatchers.io) {
         if (!running.compareAndSet(false, true)) return@withContext
+        val streams = if (streamRead == null) transport.getOutputStreams() else null
+        if (streams != null) {
+            try {
+                coroutineScope {
+                    streams.forEach { stream ->
+                        var packet: ByteArray? = null
+                        var packetOffset = 0
+                        val relay = Relay(
+                            bridge,
+                            transport,
+                            dispatchers,
+                            currentEncoding,
+                            streamRead = { buffer, offset, length ->
+                                while (packet == null || packetOffset == packet!!.size) {
+                                    val received = stream.receiveCatching()
+                                    received.exceptionOrNull()?.let { throw it }
+                                    packet = received.getOrNull() ?: return@Relay -1
+                                    packetOffset = 0
+                                }
+                                val currentPacket = checkNotNull(packet)
+                                val count = minOf(length, currentPacket.size - packetOffset)
+                                currentPacket.copyInto(buffer, offset, packetOffset, packetOffset + count)
+                                packetOffset += count
+                                count
+                            },
+                            manageAutomation = false,
+                            outputLock = outputLock,
+                        )
+                        streamRelays.add(relay)
+                        launch { relay.start() }
+                    }
+                }
+                if (bridge.transport === transport) transport.onOutputComplete()
+            } catch (e: Exception) {
+                currentCoroutineContext().ensureActive()
+                if (bridge.transport === transport) transport.onOutputFailure(e)
+                Timber.e(e, "Problem while handling SSH output streams")
+            } finally {
+                streamRelays.clear()
+                if (bridge.transport === transport) bridge.cancelAutomation()
+                running.set(false)
+            }
+            return@withContext
+        }
 
         try {
-            decoder?.reset()
-            encoder.reset()
-            sourceBuffer.clear()
-            charBuffer.clear()
-            destBuffer.clear()
-            var endOfInput = false
-            while (isActive && !endOfInput) {
-                val currentDecoder = decoder ?: continue
-
-                val offset = sourceBuffer.position()
-                val length = sourceBuffer.remaining()
-
-                val bytesRead = if (length > 0) {
-                    transport.read(sourceBuffer.array(), offset, length)
-                } else {
-                    0
+            if (streamRead == null && transport is Telnet) {
+                relayTelnet(transport)
+                return@withContext
+            }
+            val bytes = ByteArray(BUFFER_SIZE)
+            while (isActive) {
+                val count = streamRead?.invoke(bytes, 0, bytes.size) ?: transport.read(bytes, 0, bytes.size)
+                if (count == -1) {
+                    outputLock.withLock { decoder.finish() }
+                    if (manageAutomation && bridge.transport === transport) transport.onReadEof()
+                    return@withContext
                 }
-
-                endOfInput = sourceBuffer.advanceAfterRead(bytesRead, length)
-
-                sourceBuffer.flip()
-
-                while (sourceBuffer.hasRemaining() || endOfInput) {
-                    val decodeResult = currentDecoder.decode(sourceBuffer, charBuffer, endOfInput)
-
-                    charBuffer.flip()
-
-                    val automationChars = charBuffer.asReadOnlyBuffer()
-                    encoder.encode(charBuffer, destBuffer, endOfInput)
-                    automationChars.limit(charBuffer.position())
-                    bridge.onAutomationOutput(automationChars)
-                    destBuffer.flip()
-
-                    if (destBuffer.hasRemaining()) {
-                        bridge.onOutputReceived()
-                        bridge.terminalEmulator.writeInput(destBuffer.array(), 0, destBuffer.limit())
-                    }
-                    destBuffer.clear()
-                    charBuffer.compact()
-
-                    if (decodeResult.isUnderflow) {
-                        if (endOfInput) {
-                            while (true) {
-                                val flushResult = encoder.flush(destBuffer)
-                                destBuffer.flip()
-                                if (destBuffer.hasRemaining()) {
-                                    bridge.onOutputReceived()
-                                    bridge.terminalEmulator.writeInput(
-                                        destBuffer.array(),
-                                        0,
-                                        destBuffer.limit(),
-                                    )
-                                }
-                                destBuffer.clear()
-
-                                if (flushResult.isUnderflow) break
-                            }
-                            return@withContext
-                        }
-
-                        // Need more data to continue decoding
-                        break
-                    }
-
-                    if (decodeResult.isOverflow) {
-                        // Our buffer is full; let the inner loop run again to clear it
-                        continue
-                    }
-                }
-
-                // Move any remaining un-decoded bytes to the start of the buffer.
-                sourceBuffer.compact()
+                if (count < 0 || count > bytes.size) throw IOException("Invalid transport read: $count")
+                outputLock.withLock { decoder.accept(bytes, length = count) }
             }
         } catch (e: IOException) {
+            if (!manageAutomation) throw e
             Timber.e(e, "Problem while handling incoming data in relay")
+            if (bridge.transport === transport) transport.onReadFailure(e)
         } catch (e: CoderMalfunctionError) {
             Timber.e(e, "Charset decoder failed while handling incoming data")
-            bridge.dispatchDisconnect(DisconnectReason.IO_ERROR)
+            if (bridge.transport === transport) bridge.dispatchDisconnect(DisconnectReason.IO_ERROR)
         } finally {
-            bridge.cancelAutomation()
+            if (manageAutomation && bridge.transport === transport) bridge.cancelAutomation()
             running.set(false)
+        }
+    }
+
+    /** Consume each Telnet event at its wire position, without flattening it into byte reads. */
+    private suspend fun relayTelnet(telnet: Telnet) {
+        while (currentCoroutineContext().isActive) {
+            when (val result = telnet.receive()) {
+                is TelnetOutcome.Failure -> throw TelnetOperationException(result.error)
+
+                is TelnetOutcome.Success -> when (val input = result.value) {
+                    null -> {
+                        outputLock.withLock { decoder.finish() }
+                        if (bridge.transport === transport) transport.onReadEof()
+                        return
+                    }
+
+                    is TelnetInput.Data -> outputLock.withLock { decoder.accept(input.bytes) }
+
+                    is TelnetInput.EchoChanged -> telnet.onEchoChanged(input.localEcho)
+
+                    is TelnetInput.CharsetAgreed -> if (!input.name.equals(decoder.charset.name(), ignoreCase = true)) {
+                        throw IOException("Unexpected Telnet charset agreement: ${input.name}")
+                    }
+
+                    is TelnetInput.Diagnostic -> Timber.d("Telnet: %s", input.message)
+
+                    TelnetInput.GoAhead, TelnetInput.EndOfRecord -> Unit
+                }
+            }
         }
     }
 

@@ -22,8 +22,10 @@ import android.net.Uri
 import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import com.google.ase.Exec
+import kotlinx.coroutines.CoroutineScope
 import org.connectbot.R
 import org.connectbot.data.entity.Host
+import org.connectbot.di.CoroutineDispatchers
 import org.connectbot.service.DisconnectReason
 import timber.log.Timber
 import java.io.FileDescriptor
@@ -44,19 +46,22 @@ class Local @VisibleForTesting constructor(private val killer: Killer) : AbsTran
 
     constructor() : this(AndroidKiller())
 
-    override fun close() {
+    override suspend fun close() {
         try {
             os?.close()
             os = null
             `is`?.close()
             `is` = null
-            killer.killProcess(shellPid)
+            val processId = shellPid
+            shellPid = 0
+            shellFd = null
+            if (processId > 0) killer.killProcess(processId)
         } catch (e: IOException) {
             Timber.e(e, "Couldn't close shell")
         }
     }
 
-    override fun connect() {
+    override suspend fun connect(scope: CoroutineScope, dispatchers: CoroutineDispatchers, encoding: String) {
         val pids = IntArray(1)
 
         try {
@@ -72,8 +77,9 @@ class Local @VisibleForTesting constructor(private val killer: Killer) : AbsTran
         }
 
         shellPid = pids[0]
+        val processId = shellPid
         val exitWatcher = Runnable {
-            Exec.waitFor(shellPid)
+            Exec.waitFor(processId)
             bridge?.dispatchDisconnect(DisconnectReason.REMOTE_EOF)
         }
 
@@ -89,7 +95,7 @@ class Local @VisibleForTesting constructor(private val killer: Killer) : AbsTran
     }
 
     @Throws(IOException::class)
-    override fun flush() {
+    override suspend fun flush() {
         os?.flush()
     }
 
@@ -102,7 +108,7 @@ class Local @VisibleForTesting constructor(private val killer: Killer) : AbsTran
     override fun isSessionOpen(): Boolean = `is` != null && os != null
 
     @Throws(IOException::class)
-    override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
+    override suspend fun read(buffer: ByteArray, offset: Int, length: Int): Int {
         val inputStream = `is` ?: run {
             bridge?.dispatchDisconnect(DisconnectReason.IO_ERROR)
             throw IOException("session closed")
@@ -110,7 +116,7 @@ class Local @VisibleForTesting constructor(private val killer: Killer) : AbsTran
         return inputStream.read(buffer, offset, length)
     }
 
-    override fun setDimensions(columns: Int, rows: Int, width: Int, height: Int) {
+    override suspend fun resize(columns: Int, rows: Int, width: Int, height: Int) {
         // We are not connected yet.
         val fd = shellFd ?: return
 
@@ -122,13 +128,8 @@ class Local @VisibleForTesting constructor(private val killer: Killer) : AbsTran
     }
 
     @Throws(IOException::class)
-    override fun write(buffer: ByteArray) {
+    override suspend fun write(buffer: ByteArray) {
         os?.write(buffer)
-    }
-
-    @Throws(IOException::class)
-    override fun write(c: Int) {
-        os?.write(c)
     }
 
     override fun createHost(uri: Uri): Host {

@@ -19,13 +19,19 @@ package org.connectbot.transport
 
 import android.content.Context
 import android.net.Uri
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.ReceiveChannel
 import org.connectbot.data.entity.Host
 import org.connectbot.data.entity.PortForward
+import org.connectbot.di.CoroutineDispatchers
 import org.connectbot.service.TerminalBridge
 import org.connectbot.service.TerminalManager
+import org.connectbot.sshlib.ConnectionInfo
 import java.io.IOException
 
 /**
+ * Connection and stream operations are called on the injected IO dispatcher.
+ *
  * @author Kenny Root
  */
 abstract class AbsTransport {
@@ -53,21 +59,47 @@ abstract class AbsTransport {
      * session is started, must call back to [TerminalBridge.onConnected].
      * After that call a session may be opened.
      */
-    abstract fun connect()
+    abstract suspend fun connect(scope: CoroutineScope, dispatchers: CoroutineDispatchers, encoding: String)
+
+    /** Separate SSH streams retain independent character decoders in the relay. */
+    open fun getOutputStreams(): List<ReceiveChannel<ByteArray>>? = null
+
+    open suspend fun onOutputComplete() = Unit
+
+    open fun onOutputFailure(cause: Exception) = Unit
+
+    /** Write UTF-8 emulator input, applying any transport-specific encoding or input discipline. */
+    open suspend fun writeKeyboardInput(buffer: ByteArray) = write(buffer)
+
+    /** Handle unsuccessful connection setup. */
+    open fun onConnectionFailure(error: Exception) = Unit
+
+    open fun onReadFailure(error: IOException) = Unit
+
+    /** Called after the relay flushes its decoder at drained EOF. */
+    open fun onReadEof() = Unit
+
+    /** Optional resource for a recoverable operation rejection, displayed by the console. */
+    open fun userMessageForError(error: IOException): Int? = null
+
+    open suspend fun carriageReturn() = write(byteArrayOf(13))
 
     /**
-     * Reads from the transport. Transport must support reading into a the byte array
+     * Reads byte-oriented transport input. Transports with ordered events or separate
+     * output streams may leave this unsupported; their relay uses the corresponding input API.
+     * Byte transports must support reading into the byte array
      * `buffer` at the start of `offset` and a maximum of
      * `length` bytes. If the remote host disconnects, throw an
      * [IOException].
      * @param buffer byte buffer to store read bytes into
      * @param offset where to start writing in the buffer
      * @param length maximum number of bytes to read
-     * @return number of bytes read
+     * @return number of bytes read, or -1 after all input is drained
      * @throws IOException when remote host disconnects
+     * @throws UnsupportedOperationException when the transport uses an event or stream API
      */
     @Throws(IOException::class)
-    abstract fun read(buffer: ByteArray, offset: Int, length: Int): Int
+    open suspend fun read(buffer: ByteArray, offset: Int, length: Int): Int = throw UnsupportedOperationException("Transport does not expose byte reads")
 
     /**
      * Writes to the transport. If the host is not yet connected, simply return without
@@ -77,28 +109,23 @@ abstract class AbsTransport {
      * @throws IOException when there is a problem writing after connection
      */
     @Throws(IOException::class)
-    abstract fun write(buffer: ByteArray)
-
-    /**
-     * Writes to the transport. See [write] for behavior details.
-     * @param c character to write to the transport
-     * @throws IOException when there is a problem writing after connection
-     */
-    @Throws(IOException::class)
-    abstract fun write(c: Int)
+    abstract suspend fun write(buffer: ByteArray)
 
     /**
      * Flushes the write commands to the transport.
      * @throws IOException when there is a problem writing after connection
      */
     @Throws(IOException::class)
-    abstract fun flush()
+    abstract suspend fun flush()
 
     /**
-     * Closes the connection to the terminal. Note that the resulting failure to read
-     * should call [TerminalBridge.dispatchDisconnect].
+     * Release the connection and any resources allocated during setup.
+     * Safe to call before connecting or after closing.
      */
-    abstract fun close()
+    abstract suspend fun close()
+
+    /** Cache character and pixel dimensions for connection setup without performing I/O. */
+    open fun setInitialDimensions(columns: Int, rows: Int, width: Int, height: Int) = Unit
 
     /**
      * Tells the transport what dimensions the display is currently
@@ -107,7 +134,7 @@ abstract class AbsTransport {
      * @param width width in pixels
      * @param height height in pixels
      */
-    abstract fun setDimensions(columns: Int, rows: Int, width: Int, height: Int)
+    abstract suspend fun resize(columns: Int, rows: Int, width: Int, height: Int)
 
     open fun setOptions(options: Map<String, String>) {
         // do nothing
@@ -160,7 +187,7 @@ abstract class AbsTransport {
      * @param portForward member of our current port forwards list to enable
      * @return true on successful port forward setup
      */
-    open fun enablePortForward(portForward: PortForward): Boolean = false
+    open suspend fun enablePortForward(portForward: PortForward): Boolean = false
 
     /**
      * Disables a port forward member. After calling this method, the port forward should
@@ -168,14 +195,14 @@ abstract class AbsTransport {
      * @param portForward member of our current port forwards list to enable
      * @return true on successful port forward tear-down
      */
-    open fun disablePortForward(portForward: PortForward): Boolean = false
+    open suspend fun disablePortForward(portForward: PortForward): Boolean = false
 
     /**
      * Removes the [PortForward] from the available port forwards.
      * @param portForward the port forward bean to remove
      * @return true on successful removal
      */
-    open fun removePortForward(portForward: PortForward): Boolean = false
+    open suspend fun removePortForward(portForward: PortForward): Boolean = false
 
     /**
      * Gets a list of the [PortForward] currently used by this transport.
@@ -221,6 +248,9 @@ abstract class AbsTransport {
      * @return the local IP address or null
      */
     abstract fun getLocalIpAddress(): String?
+
+    /** Negotiated SSH details, retained after disconnect or Mosh handoff. */
+    open fun getSshConnectionInfo(): ConnectionInfo? = null
 
     /**
      * Called when the application goes to background.
