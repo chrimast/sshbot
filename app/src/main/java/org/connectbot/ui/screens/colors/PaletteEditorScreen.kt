@@ -79,6 +79,7 @@ import org.connectbot.ui.components.ColorPickerDialog
 import org.connectbot.ui.components.RgbColorPickerDialog
 import org.connectbot.ui.components.SaveEditorFab
 import org.connectbot.ui.components.TextInputAlertDialog
+import java.util.UUID
 
 /**
  * Screen for editing the full 256-color palette of a color scheme.
@@ -88,7 +89,7 @@ import org.connectbot.ui.components.TextInputAlertDialog
 fun PaletteEditorScreen(
     onNavigateBack: () -> Unit,
     viewModel: PaletteEditorViewModel = hiltViewModel(),
-    onNavigateToDuplicate: (Long) -> Unit,
+    onNavigateToDuplicate: (UUID) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }

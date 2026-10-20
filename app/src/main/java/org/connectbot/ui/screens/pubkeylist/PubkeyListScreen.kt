@@ -113,8 +113,8 @@ import org.connectbot.ui.theme.ConnectBotTheme
 import org.connectbot.ui.common.InputFieldShape
 
 internal object PubkeyListTestTags {
-    fun itemMenuButton(pubkeyId: Long): String = "pubkey_item_${pubkeyId}_menu_button"
-    fun itemRow(pubkeyId: Long): String = "pubkey_item_${pubkeyId}_row"
+    fun itemMenuButton(pubkeyId: UUID): String = "pubkey_item_${pubkeyId}_menu_button"
+    fun itemRow(pubkeyId: UUID): String = "pubkey_item_${pubkeyId}_row"
 
     const val PASSWORD_FIELD = "pubkey_password_field"
     const val PASSWORD_CONFIRM_BUTTON = "pubkey_password_confirm_button"
@@ -1397,7 +1397,7 @@ private fun PubkeyListScreenPopulatedPreview() {
             uiState = PubkeyListUiState(
                 pubkeys = listOf(
                     Pubkey(
-                        id = 1,
+                        id = UUID(0, 1),
                         nickname = "work-laptop",
                         type = "RSA",
                         encrypted = true,
@@ -1408,7 +1408,7 @@ private fun PubkeyListScreenPopulatedPreview() {
                         publicKey = ByteArray(0),
                     ),
                     Pubkey(
-                        id = 2,
+                        id = UUID(0, 2),
                         nickname = "home-server",
                         type = "Ed25519",
                         encrypted = false,
@@ -1419,7 +1419,7 @@ private fun PubkeyListScreenPopulatedPreview() {
                         publicKey = ByteArray(0),
                     ),
                     Pubkey(
-                        id = 3,
+                        id = UUID(0, 3),
                         nickname = "github-key",
                         type = "ECDSA",
                         encrypted = true,

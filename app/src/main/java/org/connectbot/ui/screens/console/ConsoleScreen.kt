@@ -171,6 +171,7 @@ import org.connectbot.util.PreferenceConstants
 import org.connectbot.util.UrlUtils
 import org.connectbot.util.rememberTerminalTypefaceResultFromStoredValue
 import timber.log.Timber
+import java.util.UUID
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -287,9 +288,9 @@ internal fun shouldRecordSoftwareKeyboardDismissal(
 
 @VisibleForTesting
 internal fun shouldShowSoftwareKeyboardForSessionOpen(
-    previousBridgeId: Long?,
+    previousBridgeId: UUID?,
     previousSessionOpen: Boolean,
-    currentBridgeId: Long?,
+    currentBridgeId: UUID?,
     sessionOpen: Boolean,
     hasHardwareKeyboard: Boolean,
 ): Boolean = currentBridgeId != null &&
@@ -300,8 +301,8 @@ internal fun shouldShowSoftwareKeyboardForSessionOpen(
 
 @VisibleForTesting
 internal fun shouldPreserveSoftwareKeyboardForBridgeChange(
-    previousBridgeId: Long?,
-    currentBridgeId: Long?,
+    previousBridgeId: UUID?,
+    currentBridgeId: UUID?,
     showSoftwareKeyboard: Boolean,
     hasHardwareKeyboard: Boolean,
 ): Boolean = previousBridgeId != null &&
@@ -569,7 +570,7 @@ private fun ConsoleTerminalPage(
 @Composable
 fun ConsoleScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToPortForwards: (Long) -> Unit,
+    onNavigateToPortForwards: (UUID) -> Unit,
     modifier: Modifier = Modifier,
     onNavigateToSettings: () -> Unit = {},
     viewModel: ConsoleViewModel = hiltViewModel(),
@@ -666,9 +667,9 @@ fun ConsoleScreen(
     var composeController by remember { mutableStateOf<ComposeController?>(null) }
     var imeVisible by remember { mutableStateOf(false) }
     var keyboardScrollInProgress by remember { mutableStateOf(false) }
-    var previousBridgeIdForImeState by remember { mutableStateOf<Long?>(null) }
-    var ignoreImeHiddenForBridgeId by remember { mutableStateOf<Long?>(null) }
-    var previousBridgeIdForSessionOpen by remember { mutableStateOf<Long?>(null) }
+    var previousBridgeIdForImeState by remember { mutableStateOf<UUID?>(null) }
+    var ignoreImeHiddenForBridgeId by remember { mutableStateOf<UUID?>(null) }
+    var previousBridgeIdForSessionOpen by remember { mutableStateOf<UUID?>(null) }
     var previousSessionOpen by remember { mutableStateOf(false) }
 
     val currentBridge = uiState.bridges

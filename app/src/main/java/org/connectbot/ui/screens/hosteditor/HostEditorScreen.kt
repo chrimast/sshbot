@@ -74,14 +74,17 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import org.connectbot.BuildConfig
 import org.connectbot.R
+import org.connectbot.data.EntityIds
 import org.connectbot.data.entity.ColorScheme
 import org.connectbot.data.entity.Host
+import org.connectbot.data.entity.HostCryptoConfig
 import org.connectbot.data.entity.Profile
 import org.connectbot.data.entity.Pubkey
 import org.connectbot.data.entity.TelnetEchoMode
 import org.connectbot.data.entity.TelnetNegotiationMode
 import org.connectbot.data.entity.TelnetNewlinePolicy
 import org.connectbot.data.entity.TelnetNonBinaryPolicy
+import org.connectbot.sshlib.SshCryptoPolicy
 import org.connectbot.ui.PreviewScreen
 import org.connectbot.ui.common.findColorOption
 import org.connectbot.ui.common.FlagIcon
@@ -94,21 +97,28 @@ import org.connectbot.ui.theme.ConnectBotTheme
 import org.connectbot.util.HostConstants
 import org.connectbot.util.LocalFontProvider
 import org.connectbot.util.TerminalFont
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HostEditorScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToProfile: (Long) -> Unit,
+    onNavigateToProfile: (UUID) -> Unit,
     modifier: Modifier = Modifier,
-    onNavigateToAutomation: (Long) -> Unit = {},
+    onNavigateToAutomation: (UUID) -> Unit = {},
     viewModel: HostEditorViewModel = hiltViewModel(),
-    onNavigateToKnownHosts: (Long) -> Unit = {},
+    onNavigateToKnownHosts: (UUID) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    androidx.lifecycle.compose.LifecycleResumeEffect(viewModel) {
+        viewModel.refreshAlgorithms()
+        onPauseOrDispose { }
+    }
 
     HostEditorScreenContent(
         hostId = uiState.hostId,
+        onCryptoChange = viewModel::updateCrypto,
+        onResolveCrypto = viewModel::resolveCrypto,
         uiState = uiState,
         onNavigateBack = onNavigateBack,
         onNavigateToKnownHosts = onNavigateToKnownHosts,
@@ -149,7 +159,7 @@ fun HostEditorScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HostEditorScreenContent(
-    hostId: Long,
+    hostId: UUID,
     uiState: HostEditorUiState,
     onNavigateBack: () -> Unit,
     onNicknameChange: (String) -> Unit,
@@ -159,21 +169,23 @@ fun HostEditorScreenContent(
     onHostnameChange: (String) -> Unit,
     onPortChange: (String) -> Unit,
     onColorChange: (String) -> Unit,
-    onPubkeyChange: (Long) -> Unit,
-    onProfileChange: (Long?) -> Unit,
-    onNavigateToProfile: (Long) -> Unit,
+    onPubkeyChange: (UUID) -> Unit,
+    onProfileChange: (UUID?) -> Unit,
+    onNavigateToProfile: (UUID) -> Unit,
     onUseAuthAgentChange: (String) -> Unit,
     onCompressionChange: (Boolean) -> Unit,
     onWantSessionChange: (Boolean) -> Unit,
     onStayConnectedChange: (Boolean) -> Unit,
     onQuickDisconnectChange: (Boolean) -> Unit,
     onEditAutomation: () -> Unit,
-    onJumpHostChange: (Long?) -> Unit,
+    onJumpHostChange: (UUID?) -> Unit,
     onIpVersionChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onClearPassword: () -> Unit,
     onSaveHost: suspend () -> Boolean,
     modifier: Modifier = Modifier,
+    onCryptoChange: (HostCryptoConfig) -> Unit = {},
+    onResolveCrypto: suspend (HostCryptoConfig) -> SshCryptoPolicy? = { null },
     onCancelMoshInstall: () -> Unit = {},
     onTelnetEchoModeChange: (TelnetEchoMode) -> Unit = {},
     onTelnetNegotiationModeChange: (TelnetNegotiationMode) -> Unit = {},
@@ -183,7 +195,7 @@ fun HostEditorScreenContent(
     onMoshNetworkTimeoutChange: (String) -> Unit = {},
     onMoshServerChange: (String) -> Unit = {},
     onLocaleChange: (String) -> Unit = {},
-    onNavigateToKnownHosts: (Long) -> Unit = {},
+    onNavigateToKnownHosts: (UUID) -> Unit = {},
 ) {
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -385,30 +397,6 @@ fun HostEditorScreenContent(
                                 Text(stringResource(R.string.hostpref_clear_password))
                             }
                         }
-
-                        if (hostId != -1L) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onNavigateToKnownHosts(hostId) }
-                                    .padding(vertical = 8.dp)
-                                    .testTag("known_host_keys_preference"),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = stringResource(R.string.hostpref_known_hosts_title),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                    )
-                                    Text(
-                                        text = stringResource(R.string.hostpref_known_hosts_summary),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
-                            }
-                        }
                     }
                 }
             // Color selector
@@ -495,6 +483,17 @@ fun HostEditorScreenContent(
                 checked = uiState.compression,
                 onCheckedChange = onCompressionChange,
             )
+
+            // Address-family overrides are less common than authentication and routing settings.
+            if (showAdvancedOptions && (uiState.protocol == "ssh" || uiState.protocol == "mosh")) {
+                // IP version selector (disabled for literal IP addresses)
+                IpVersionSelector(
+                    ipVersion = uiState.ipVersion,
+                    hostname = uiState.hostname,
+                    onIpVersionSelect = onIpVersionChange,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
 
             // Want session
             HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
@@ -748,9 +747,9 @@ private fun FontFamilySelector(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ColorSchemeSelector(
-    colorSchemeId: Long,
+    colorSchemeId: UUID,
     availableSchemes: List<ColorScheme>,
-    onColorSchemeSelect: (Long) -> Unit,
+    onColorSchemeSelect: (UUID) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
@@ -827,17 +826,17 @@ private fun ColorSchemeSelector(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PubkeySelector(
-    pubkeyId: Long,
+    pubkeyId: UUID,
     availablePubkeys: List<Pubkey>,
-    onPubkeySelect: (Long) -> Unit,
+    onPubkeySelect: (UUID) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
     // Build options list: first the default options, then individual keys
     val defaultOptions = listOf(
-        stringResource(R.string.list_pubkeyids_any) to -1L,
-        stringResource(R.string.list_pubkeyids_none) to -2L,
+        stringResource(R.string.list_pubkeyids_any) to HostConstants.PUBKEYID_ANY,
+        stringResource(R.string.list_pubkeyids_none) to HostConstants.PUBKEYID_NEVER,
     )
 
     val pubkeyOptions = availablePubkeys.map { pubkey ->
@@ -896,10 +895,10 @@ private fun PubkeySelector(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ProfileSelector(
-    profileId: Long?,
+    profileId: UUID?,
     availableProfiles: List<Profile>,
-    onProfileSelect: (Long?) -> Unit,
-    onEditProfile: (Long) -> Unit,
+    onProfileSelect: (UUID?) -> Unit,
+    onEditProfile: (UUID) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -1039,9 +1038,9 @@ private fun IpVersionSelector(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun JumpHostSelector(
-    jumpHostId: Long?,
+    jumpHostId: UUID?,
     availableJumpHosts: List<Host>,
-    onJumpHostSelect: (Long?) -> Unit,
+    onJumpHostSelect: (UUID?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -1275,19 +1274,19 @@ private fun SwitchPreference(
 private fun HostEditorScreenPreview() {
     ConnectBotTheme {
         HostEditorScreenContent(
-            hostId = 1L,
+            hostId = UUID(0, 1),
             uiState = HostEditorUiState(
-                hostId = 1L,
+                hostId = UUID(0, 1),
                 nickname = "Production Server",
                 protocol = "ssh",
                 username = "admin",
                 hostname = "prod.example.com",
                 port = "22",
                 color = "blue",
-                pubkeyId = -1L,
+                pubkeyId = HostConstants.PUBKEYID_ANY,
                 availablePubkeys = listOf(
                     Pubkey(
-                        id = 1,
+                        id = UUID(0, 1),
                         nickname = "My SSH Key",
                         type = "rsa",
                         privateKey = byteArrayOf(),

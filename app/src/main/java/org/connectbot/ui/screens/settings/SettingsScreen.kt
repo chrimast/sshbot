@@ -91,6 +91,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.connectbot.BuildConfig
 import org.connectbot.R
+import org.connectbot.data.EntityIds
 import org.connectbot.terminal.ImeShortcutInputMode
 import org.connectbot.ui.ObservePermissionOnResume
 import org.connectbot.ui.PreviewScreen
@@ -107,6 +108,7 @@ import org.connectbot.util.isNotificationPermissionGranted
 import org.connectbot.ui.common.InputFieldShape
 import org.xmlpull.v1.XmlPullParser
 import java.util.Locale
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -261,7 +263,7 @@ fun SettingsScreenContent(
     onImportLocalFont: (Uri, String) -> Unit,
     onDeleteLocalFont: (String) -> Unit,
     onClearImportError: () -> Unit,
-    onDefaultProfileChange: (Long) -> Unit,
+    onDefaultProfileChange: (UUID) -> Unit,
     onLanguageChange: (String) -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit,
     onRotationChange: (String) -> Unit,

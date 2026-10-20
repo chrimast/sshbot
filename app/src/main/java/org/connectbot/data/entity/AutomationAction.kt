@@ -52,8 +52,8 @@ enum class AutomationFailurePolicy { STOP, CONTINUE }
     indices = [Index("host_id")],
 )
 data class AutomationAction(
-    @PrimaryKey val id: String = UUID.randomUUID().toString(),
-    @ColumnInfo(name = "host_id") val hostId: Long,
+    @PrimaryKey val id: UUID = UUID.randomUUID(),
+    @ColumnInfo(name = "host_id") val hostId: UUID,
     val position: Int = 0,
     val type: AutomationActionType = AutomationActionType.SEND_TEXT,
     val text: String = "",
@@ -62,6 +62,6 @@ data class AutomationAction(
     val key: Int = VTermKey.ENTER,
     val modifiers: Int = TerminalKeyModifiers.NONE,
     // Intentionally not a foreign key: deleting a forward must not delete an action.
-    @ColumnInfo(name = "forward_id") val forwardId: Long? = null,
+    @ColumnInfo(name = "forward_id") val forwardId: UUID? = null,
     @ColumnInfo(name = "failure_policy") val failurePolicy: AutomationFailurePolicy = AutomationFailurePolicy.STOP,
 )

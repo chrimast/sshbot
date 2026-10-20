@@ -64,16 +64,15 @@ import org.connectbot.data.entity.Pubkey
 import org.connectbot.di.CoroutineDispatchers
 import org.connectbot.sshlib.SshSigning
 import org.connectbot.transport.TransportFactory
+import org.connectbot.util.CryptoProviderState
 import org.connectbot.util.PreferenceConstants
-import org.connectbot.util.ProviderLoader
-import org.connectbot.util.ProviderLoaderListener
 import org.connectbot.util.PubkeyUtils
 import timber.log.Timber
 import java.io.IOException
 import java.lang.ref.WeakReference
 import java.security.KeyPair
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 
 /**
@@ -85,8 +84,7 @@ import javax.inject.Inject
 class TerminalManager :
     Service(),
     BridgeDisconnectedListener,
-    OnSharedPreferenceChangeListener,
-    ProviderLoaderListener {
+    OnSharedPreferenceChangeListener {
 
     private val _bridges = ArrayList<TerminalBridge>()
     private val _bridgesFlow = MutableStateFlow<List<TerminalBridge>>(emptyList())
@@ -99,9 +97,9 @@ class TerminalManager :
     private val _disconnectedFlow = MutableStateFlow<List<Host>>(emptyList())
     val disconnectedFlow: StateFlow<List<Host>> = _disconnectedFlow.asStateFlow()
 
-    private val endedSessionAttention = ConcurrentHashMap<Long, SessionAttention>()
+    private val endedSessionAttention = ConcurrentHashMap<UUID, SessionAttention>()
 
-    fun getSessionAttention(hostId: Long): SessionAttentionState? = bridgesFlow.value.find { it.host.id == hostId }?.sessionAttention?.snapshot()
+    fun getSessionAttention(hostId: UUID): SessionAttentionState? = bridgesFlow.value.find { it.host.id == hostId }?.sessionAttention?.snapshot()
         ?: endedSessionAttention[hostId]?.snapshot()
 
     private var disconnectListener: BridgeDisconnectedListener? = null
@@ -253,8 +251,6 @@ class TerminalManager :
 
     private val pendingReconnect: MutableList<WeakReference<TerminalBridge>> = ArrayList()
 
-    private val nextTemporaryHostId = AtomicLong(-1L)
-
     internal var hardKeyboardHidden = false
 
     override fun onCreate() {
@@ -328,7 +324,7 @@ class TerminalManager :
         connectivityMonitor = ConnectivityMonitor(this, lockingWifi)
         connectivityMonitor.init()
 
-        ProviderLoader.load(this, this)
+        scope.launch(dispatchers.main) { CryptoProviderState.ensureLoaded(this@TerminalManager, dispatchers) }
     }
 
     private fun updateSavingKeys() {
@@ -357,12 +353,6 @@ class TerminalManager :
     }
 
     /**
-     * Generate a unique negative ID for a temporary host.
-     * Temporary hosts use negative IDs to distinguish them from database hosts.
-     */
-    private fun generateTemporaryHostId(): Long = nextTemporaryHostId.getAndDecrement()
-
-    /**
      * Disconnect all currently connected bridges.
      */
     fun disconnectAll(excludeLocal: Boolean) {
@@ -388,7 +378,7 @@ class TerminalManager :
     /**
      * Disconnect active bridges and queued reconnects for a database host.
      */
-    fun disconnectHost(hostId: Long) {
+    fun disconnectHost(hostId: UUID) {
         val bridges = synchronized(_bridges) {
             _bridges.filter { it.host.id == hostId }
         }
@@ -471,9 +461,9 @@ class TerminalManager :
             ?: TransportFactory.getTransport(scheme)?.createHost(uri)
             ?: throw IllegalArgumentException("No transport found for scheme '$scheme' in URI: $uri")
 
-        // Assign unique negative ID to temporary hosts (id == 0)
-        val finalHost = if (host.id == 0L) {
-            host.copy(id = generateTemporaryHostId())
+        // Mark hosts that are absent from the database as temporary
+        val finalHost = if (hostRepository.findHostById(host.id) == null) {
+            host.copy(isTemporary = true)
         } else {
             host
         }
@@ -488,7 +478,7 @@ class TerminalManager :
      * @param hostId the database ID of the host to connect to
      * @return TerminalBridge for the connection, or null if host not found
      */
-    suspend fun openConnectionForHostId(hostId: Long): TerminalBridge? {
+    suspend fun openConnectionForHostId(hostId: UUID): TerminalBridge? {
         val host = hostRepository.findHostById(hostId) ?: return null
         return openConnection(host)
     }
@@ -801,14 +791,6 @@ class TerminalManager :
     private fun stopIdleTimer() {
         idleJob?.cancel()
         idleJob = null
-    }
-
-    override fun onProviderLoaderSuccess() {
-        Timber.d("Installed crypto provider successfully")
-    }
-
-    override fun onProviderLoaderError() {
-        Timber.e("Failure while installing crypto provider")
     }
 
     inner class TerminalBinder : Binder() {

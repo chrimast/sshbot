@@ -38,6 +38,7 @@ import org.connectbot.service.automation.AutomationKeySupport
 import org.connectbot.service.automation.AutomationRegex
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.UUID
 import javax.inject.Inject
 
 data class AutomationEditorState(
@@ -60,7 +61,7 @@ internal object AutomationDraftCodec {
         actions.forEach { a ->
             put(
                 JSONObject().apply {
-                    put("id", a.id)
+                    put("id", a.id.toString())
                     put("host", a.hostId)
                     put("type", a.type.name)
                     put("text", a.text)
@@ -80,11 +81,11 @@ internal object AutomationDraftCodec {
         return (0 until array.length()).map { index ->
             val a = array.getJSONObject(index)
             AutomationAction(
-                id = a.getString("id"), hostId = a.getLong("host"), position = index,
+                id = UUID.fromString(a.getString("id")), hostId = UUID.fromString(a.getString("host")), position = index,
                 type = AutomationActionType.valueOf(a.getString("type")),
                 text = a.getString("text"), regex = a.getBoolean("regex"),
                 durationMs = a.getLong("duration"), key = a.getInt("key"), modifiers = a.getInt("modifiers"),
-                forwardId = if (a.isNull("forward")) null else a.getLong("forward"),
+                forwardId = if (a.isNull("forward")) null else UUID.fromString(a.getString("forward")),
                 failurePolicy = AutomationFailurePolicy.valueOf(a.getString("failure")),
             )
         }
@@ -97,7 +98,7 @@ class AutomationEditorViewModel @Inject constructor(
     private val repository: HostRepository,
     private val dispatchers: CoroutineDispatchers,
 ) : ViewModel() {
-    private val hostId = checkNotNull(savedStateHandle.get<Long>("hostId"))
+    private val hostId = UUID.fromString(checkNotNull(savedStateHandle.get<String>("hostId")))
     private val mutableState = MutableStateFlow(
         AutomationEditorState(editing = savedStateHandle.get<String>("editing")?.let { AutomationDraftCodec.decode(it).single() }),
     )
@@ -152,9 +153,9 @@ class AutomationEditorViewModel @Inject constructor(
         savedStateHandle.remove<String>("editing")
         mutableState.update { it.copy(editing = null, editError = null) }
     }
-    fun delete(id: String) = change(mutableState.value.actions.filterNot { it.id == id })
+    fun delete(id: UUID) = change(mutableState.value.actions.filterNot { it.id == id })
 
-    fun move(id: String, target: Int) {
+    fun move(id: UUID, target: Int) {
         val list = mutableState.value.actions.toMutableList()
         val from = list.indexOfFirst { it.id == id }
         if (from < 0 || target !in list.indices || from == target) return

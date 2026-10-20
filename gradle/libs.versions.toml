@@ -7,6 +7,7 @@ easylauncher = "6.4.1"
 pythonUv = "0.4.31"
 appVersioning = "1.6.0"
 room = "2.8.5"
+asm = "9.10.1"
 ksp = "2.3.12"
 hilt = "2.60.1"
 hiltNavigationCompose = "1.4.0"
@@ -24,7 +25,7 @@ navigationEvent = "1.2.0"
 activityCompose = "1.13.0"
 
 telnetlib = "0.1.0"
-sshlib = "0.6.1"
+sshlib = "0.6.2"
 termlib = "0.3.13"
 playServicesBasement = "18.12.0"
 playFeatureDelivery = "2.1.0"
@@ -61,6 +62,7 @@ coil = "3.1.0"
 work = "2.11.1"
 
 [libraries]
+asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
 telnetlib = { module = "org.connectbot.telnetlib:telnetlib", version.ref = "telnetlib" }
 telnetlib-ktor = { module = "org.connectbot.telnetlib:telnetlib-ktor", version.ref = "telnetlib" }
 sshlib = { module = "org.connectbot.sshlib:sshlib", version.ref = "sshlib" }

@@ -21,23 +21,31 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.lifecycle.SavedStateHandle
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import org.connectbot.data.EntityIds
 import org.connectbot.data.HostRepository
 import org.connectbot.data.ProfileRepository
 import org.connectbot.data.PubkeyRepository
 import org.connectbot.data.entity.Host
+import org.connectbot.data.entity.HostCryptoConfig
 import org.connectbot.data.entity.TelnetEchoMode
 import org.connectbot.data.entity.TelnetNegotiationMode
 import org.connectbot.data.entity.TelnetNewlinePolicy
 import org.connectbot.data.entity.TelnetNonBinaryPolicy
 import org.connectbot.di.CoroutineDispatchers
+import org.connectbot.sshlib.AlgorithmCategory
+import org.connectbot.sshlib.SshCryptoPolicy
+import org.connectbot.util.HostConstants
 import org.connectbot.util.SecurePasswordStorage
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -49,9 +57,12 @@ import org.junit.runner.RunWith
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.never
+import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.robolectric.RobolectricTestRunner
+import java.util.UUID
 
 @RunWith(RobolectricTestRunner::class)
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -83,7 +94,7 @@ class HostEditorViewModelTest {
         // Mock default behavior for observe calls
         `when`(pubkeyRepository.observeAll()).thenReturn(flowOf(emptyList()))
         `when`(repository.observeSshHosts()).thenReturn(flowOf(emptyList()))
-        `when`(repository.observeAutomation(org.mockito.ArgumentMatchers.anyLong())).thenReturn(flowOf(emptyList()))
+        `when`(repository.observeAutomation(any(UUID::class.java) ?: EntityIds.NONE)).thenReturn(flowOf(emptyList()))
         `when`(profileRepository.observeAll()).thenReturn(flowOf(emptyList()))
         `when`(prefs.getLong("defaultProfileId", 0L)).thenReturn(0L)
     }
@@ -93,8 +104,8 @@ class HostEditorViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel(hostId: Long = -1L): HostEditorViewModel {
-        savedStateHandle["hostId"] = hostId
+    private fun createViewModel(hostId: UUID = EntityIds.NONE): HostEditorViewModel {
+        savedStateHandle["hostId"] = hostId.toString()
         return HostEditorViewModel(
             context = context,
             savedStateHandle = savedStateHandle,
@@ -109,11 +120,11 @@ class HostEditorViewModelTest {
 
     @Test
     fun testNewHost_initializesWithDefaultState() = runTest {
-        val viewModel = createViewModel(-1L)
+        val viewModel = createViewModel(EntityIds.NONE)
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
-        assertEquals(-1L, state.hostId)
+        assertEquals(EntityIds.NONE, state.hostId)
         assertEquals("", state.nickname)
         assertEquals("ssh", state.protocol)
         assertEquals("", state.username)
@@ -136,7 +147,7 @@ class HostEditorViewModelTest {
 
     @Test
     fun testLoadExistingHost_populatesFields() = runTest {
-        val hostId = 42L
+        val hostId = UUID(0, 42)
         val existingHost = Host(
             id = hostId,
             nickname = "test-nick",
@@ -163,7 +174,7 @@ class HostEditorViewModelTest {
 
     @Test
     fun testLoadExistingHost_matchingNickname_doesNotPopulateFieldsOnEdit() = runTest {
-        val hostId = 42L
+        val hostId = UUID(0, 42)
         val existingHost = Host(
             id = hostId,
             nickname = "test-user@10.0.0.1:22",
@@ -230,7 +241,7 @@ class HostEditorViewModelTest {
     @Test
     fun testUpdateNickname_whenCustom_doesNotSyncFields() = runTest {
         val host = Host(
-            id = 42L,
+            id = UUID(0, 42),
             nickname = "Production",
             username = "user",
             hostname = "192.168.1.1",
@@ -326,7 +337,7 @@ class HostEditorViewModelTest {
     @Test
     fun testMoshNickname_existingHostEditsAreIndependent() = runTest {
         val host = Host(
-            id = 42L,
+            id = UUID(0, 42),
             nickname = "user@example.com:22",
             protocol = "mosh",
             username = "user",
@@ -384,7 +395,7 @@ class HostEditorViewModelTest {
 
     @Test
     fun testSaveHost_persistsUpdatedValues() = runTest {
-        val hostId = 42L
+        val hostId = UUID(0, 42)
         val existingHost = Host(
             id = hostId,
             nickname = "test-user@10.0.0.1",
@@ -426,7 +437,7 @@ class HostEditorViewModelTest {
 
     @Test
     fun testSaveHost_completesBeforeReturning() = runTest {
-        val hostId = 42L
+        val hostId = UUID(0, 42)
         val existingHost = Host(
             id = hostId,
             nickname = "test-user@10.0.0.1:555",
@@ -454,7 +465,7 @@ class HostEditorViewModelTest {
 
     @Test
     fun testSaveHost_customNickname_doesNotSync() = runTest {
-        val hostId = 42L
+        val hostId = UUID(0, 42)
         val existingHost = Host(
             id = hostId,
             nickname = "My Custom Server",
@@ -526,7 +537,7 @@ class HostEditorViewModelTest {
 
     @Test
     fun testSaveHost_blankPort_usesDefaultPort() = runTest {
-        val hostId = 42L
+        val hostId = UUID(0, 42)
         val existingHost = Host(
             id = hostId,
             nickname = "test-user@10.0.0.1",
@@ -576,7 +587,7 @@ class HostEditorViewModelTest {
 
     @Test
     fun testLoadExistingHost_preservesExplicitDefaultPortInNickname() = runTest {
-        val hostId = 42L
+        val hostId = UUID(0, 42)
         val existingHost = Host(
             id = hostId,
             nickname = "test-user@10.0.0.1:22",
@@ -668,10 +679,10 @@ class HostEditorViewModelTest {
 
     @Test
     fun moshTimeoutLoadsAndSavesHostOverride() = runTest(testDispatcher) {
-        val host = Host(id = 42, hostname = "example.com", protocol = "mosh", moshNetworkTimeout = 86400)
-        `when`(repository.findHostById(42)).thenReturn(host)
+        val host = Host(id = UUID(0, 42), hostname = "example.com", protocol = "mosh", moshNetworkTimeout = 86400)
+        `when`(repository.findHostById(UUID(0, 42))).thenReturn(host)
         `when`(repository.saveHost(any(Host::class.java) ?: Host())).thenAnswer { it.arguments[0] as Host }
-        val viewModel = createViewModel(42)
+        val viewModel = createViewModel(UUID(0, 42))
         advanceUntilIdle()
         assertEquals("86400", viewModel.uiState.value.moshNetworkTimeout)
         viewModel.updateMoshNetworkTimeout("0")
@@ -684,15 +695,15 @@ class HostEditorViewModelTest {
     @Test
     fun telnetOptionsLoadAndSaveAcrossProtocolSwitches() = runTest {
         val existing = Host(
-            id = 42, nickname = "Telnet", protocol = "telnet", hostname = "example.com", port = 23,
+            id = UUID(0, 42), nickname = "Telnet", protocol = "telnet", hostname = "example.com", port = 23,
             telnetEchoMode = TelnetEchoMode.OFF,
             telnetNegotiationMode = TelnetNegotiationMode.PASSIVE,
             telnetNonBinaryPolicy = TelnetNonBinaryPolicy.STRICT_ASCII,
             telnetNewlinePolicy = TelnetNewlinePolicy.PRESERVE_LF,
         )
-        `when`(repository.findHostById(42)).thenReturn(existing)
+        `when`(repository.findHostById(UUID(0, 42))).thenReturn(existing)
         `when`(repository.saveHost(any(Host::class.java) ?: Host())).thenAnswer { it.arguments[0] as Host }
-        val viewModel = createViewModel(42)
+        val viewModel = createViewModel(UUID(0, 42))
         advanceUntilIdle()
         assertEquals(TelnetEchoMode.OFF, viewModel.uiState.value.telnetEchoMode)
         assertEquals(TelnetNegotiationMode.PASSIVE, viewModel.uiState.value.telnetNegotiationMode)
@@ -713,5 +724,62 @@ class HostEditorViewModelTest {
         assertEquals(TelnetNegotiationMode.INTERACTIVE, saved.telnetNegotiationMode)
         assertEquals(TelnetNonBinaryPolicy.EIGHT_BIT_COMPATIBILITY, saved.telnetNonBinaryPolicy)
         assertEquals(TelnetNewlinePolicy.LF_TO_CRLF, saved.telnetNewlinePolicy)
+    }
+
+    @Test
+    fun cryptoPolicyLoadsAndSavingPresetRetainsCustomOverrides() = runTest {
+        val hostId = UUID(0, 701)
+        val crypto = HostCryptoConfig(preset = "CUSTOM", kex = "+future@example.com", minimumRsaBits = 3072)
+        `when`(repository.findHostById(hostId)).thenReturn(Host(id = hostId, hostname = "example.com", crypto = crypto))
+        `when`(repository.saveHost(any(Host::class.java) ?: Host())).thenAnswer { it.arguments[0] as Host }
+        val viewModel = createViewModel(hostId)
+        advanceUntilIdle()
+        assertEquals(crypto, viewModel.uiState.value.crypto)
+        viewModel.updateCrypto(crypto.copy(preset = "FUTURE"))
+        assertTrue(viewModel.saveHost())
+        val captured = ArgumentCaptor.forClass(Host::class.java)
+        verify(repository).saveHost(captured.capture() ?: Host())
+        assertEquals(crypto.copy(preset = "FUTURE"), captured.value.crypto)
+    }
+
+    @Test
+    fun invalidCustomMinimumCannotBeSaved() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.updateHostname("example.com")
+        viewModel.updateCrypto(HostCryptoConfig(preset = "CUSTOM", minimumDhBits = 100))
+        assertFalse(viewModel.saveHost())
+        assertTrue(viewModel.uiState.value.hasUnsavedChanges)
+        verify(repository, never()).saveHost(any(Host::class.java) ?: Host())
+    }
+
+    @Test
+    fun concurrentSavesDoNotPassTheGuardWhilePolicyValidationIsSuspended() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.updateHostname("example.com")
+        `when`(repository.saveHost(any(Host::class.java) ?: Host())).thenAnswer { it.arguments[0] as Host }
+        val caller = UnconfinedTestDispatcher(testScheduler)
+        val first = async(caller, start = CoroutineStart.UNDISPATCHED) { viewModel.saveHost() }
+        val second = async(caller, start = CoroutineStart.UNDISPATCHED) { viewModel.saveHost() }
+        advanceUntilIdle()
+        assertTrue(first.await())
+        assertFalse(second.await())
+        verify(repository, times(1)).saveHost(any(Host::class.java) ?: Host())
+    }
+
+    @Test
+    fun refreshingAlgorithmsLoadsRuntimeCatalogAndDefaultLimits() = runTest {
+        val viewModel = createViewModel()
+        viewModel.refreshAlgorithms()
+        advanceUntilIdle()
+        val state = viewModel.uiState.value
+        assertTrue(state.algorithmCatalog.values.all { it.isNotEmpty() })
+        assertEquals(AlgorithmCategory.entries.toSet(), state.algorithmCatalog.keys)
+        assertEquals(2048, state.defaultMinimumRsaBits)
+        assertEquals(2048, state.defaultMinimumDhBits)
+        val policy = viewModel.resolveCrypto(HostCryptoConfig(preset = "CUSTOM", minimumRsaBits = 4096))
+        assertEquals(4096, policy.minimumRsaBits)
+        assertEquals(state.algorithmDefaults, SshCryptoPolicy.resolve().algorithms)
     }
 }

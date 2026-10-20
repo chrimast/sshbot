@@ -28,6 +28,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import org.connectbot.data.EntityIds
 import org.connectbot.data.entity.Host
 import org.connectbot.ui.screens.colors.ColorsScreen
 import org.connectbot.ui.screens.colors.PaletteEditorScreen
@@ -50,6 +51,7 @@ import org.connectbot.ui.screens.pubkeylist.PubkeyListScreen
 import org.connectbot.ui.screens.settings.SettingsScreen
 import org.connectbot.util.IconStyle
 import timber.log.Timber
+import java.util.UUID
 
 @Composable
 fun ConnectBotNavHost(
@@ -101,7 +103,7 @@ fun ConnectBotNavHost(
         composable(
             route = "${NavDestinations.CONSOLE}/{${NavArgs.HOST_ID}}",
             arguments = listOf(
-                navArgument(NavArgs.HOST_ID) { type = NavType.LongType },
+                navArgument(NavArgs.HOST_ID) { type = NavType.StringType },
             ),
         ) {
             ConsoleScreen(
@@ -119,8 +121,8 @@ fun ConnectBotNavHost(
             route = "${NavDestinations.HOST_EDITOR}?${NavArgs.HOST_ID}={${NavArgs.HOST_ID}}",
             arguments = listOf(
                 navArgument(NavArgs.HOST_ID) {
-                    type = NavType.LongType
-                    defaultValue = -1L
+                    type = NavType.StringType
+                    defaultValue = ""
                 },
             ),
         ) {
@@ -140,7 +142,7 @@ fun ConnectBotNavHost(
 
         composable(
             route = "${NavDestinations.AUTOMATION_EDITOR}/{${NavArgs.HOST_ID}}",
-            arguments = listOf(navArgument(NavArgs.HOST_ID) { type = NavType.LongType }),
+            arguments = listOf(navArgument(NavArgs.HOST_ID) { type = NavType.StringType }),
         ) {
             org.connectbot.ui.screens.automation.AutomationEditorScreen(
                 onNavigateBack = { navController.safePopBackStack() },
@@ -160,7 +162,7 @@ fun ConnectBotNavHost(
         composable(
             route = "${NavDestinations.KNOWN_HOST_LIST}/{${NavArgs.HOST_ID}}",
             arguments = listOf(
-                navArgument(NavArgs.HOST_ID) { type = NavType.LongType },
+                navArgument(NavArgs.HOST_ID) { type = NavType.StringType },
             ),
         ) {
             KnownHostListScreen(
@@ -177,7 +179,7 @@ fun ConnectBotNavHost(
         composable(
             route = "${NavDestinations.PUBKEY_EDITOR}/{${NavArgs.PUBKEY_ID}}",
             arguments = listOf(
-                navArgument(NavArgs.PUBKEY_ID) { type = NavType.LongType },
+                navArgument(NavArgs.PUBKEY_ID) { type = NavType.StringType },
             ),
         ) {
             PubkeyEditorScreen(
@@ -188,14 +190,14 @@ fun ConnectBotNavHost(
         composable(
             route = "${NavDestinations.PORT_FORWARD_LIST}/{${NavArgs.HOST_ID}}",
             arguments = listOf(
-                navArgument(NavArgs.HOST_ID) { type = NavType.LongType },
+                navArgument(NavArgs.HOST_ID) { type = NavType.StringType },
             ),
         ) { entry ->
             PortForwardListScreen(
                 onNavigateBack = { navController.safePopBackStack() },
                 onNavigateToEditor = { forwardId ->
-                    entry.arguments?.getLong(NavArgs.HOST_ID)?.let { hostId ->
-                        navController.navigateSafely("${NavDestinations.PORT_FORWARD_EDITOR}/$hostId/${forwardId ?: 0L}")
+                    entry.arguments?.getString(NavArgs.HOST_ID)?.let { hostId ->
+                        navController.navigateSafely("${NavDestinations.PORT_FORWARD_EDITOR}/$hostId/${forwardId ?: EntityIds.NONE}")
                     }
                 },
             )
@@ -210,8 +212,8 @@ fun ConnectBotNavHost(
         composable(
             route = "${NavDestinations.PORT_FORWARD_EDITOR}/{${NavArgs.HOST_ID}}/{${NavArgs.FORWARD_ID}}",
             arguments = listOf(
-                navArgument(NavArgs.HOST_ID) { type = NavType.LongType },
-                navArgument(NavArgs.FORWARD_ID) { type = NavType.LongType },
+                navArgument(NavArgs.HOST_ID) { type = NavType.StringType },
+                navArgument(NavArgs.FORWARD_ID) { type = NavType.StringType },
             ),
         ) {
             PortForwardEditorScreen(onNavigateBack = { navController.safePopBackStack() })
@@ -246,7 +248,7 @@ fun ConnectBotNavHost(
         composable(
             route = "${NavDestinations.PALETTE_EDITOR}/{${NavArgs.SCHEME_ID}}",
             arguments = listOf(
-                navArgument(NavArgs.SCHEME_ID) { type = NavType.LongType },
+                navArgument(NavArgs.SCHEME_ID) { type = NavType.StringType },
             ),
         ) {
             PaletteEditorScreen(
@@ -280,7 +282,7 @@ fun ConnectBotNavHost(
         composable(
             route = "${NavDestinations.PROFILE_EDITOR}/{${NavArgs.PROFILE_ID}}",
             arguments = listOf(
-                navArgument(NavArgs.PROFILE_ID) { type = NavType.LongType },
+                navArgument(NavArgs.PROFILE_ID) { type = NavType.StringType },
             ),
         ) {
             ProfileEditorScreen(
@@ -363,9 +365,9 @@ fun NavController.navigateSafely(
 }
 
 /** Opens the requested session with its own ViewModel when switching consoles. */
-fun NavController.navigateToConsole(hostId: Long) {
+fun NavController.navigateToConsole(hostId: UUID) {
     val sameConsole = currentDestination?.route == "${NavDestinations.CONSOLE}/{${NavArgs.HOST_ID}}" &&
-        currentBackStackEntry?.arguments?.getLong(NavArgs.HOST_ID) == hostId
+        currentBackStackEntry?.arguments?.getString(NavArgs.HOST_ID) == hostId.toString()
     navigate("${NavDestinations.CONSOLE}/$hostId") {
         launchSingleTop = sameConsole
     }
