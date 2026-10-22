@@ -84,6 +84,7 @@ import org.connectbot.data.entity.TelnetEchoMode
 import org.connectbot.data.entity.TelnetNegotiationMode
 import org.connectbot.data.entity.TelnetNewlinePolicy
 import org.connectbot.data.entity.TelnetNonBinaryPolicy
+import org.connectbot.data.keyboard.KeyboardDraft
 import org.connectbot.sshlib.SshCryptoPolicy
 import org.connectbot.ui.PreviewScreen
 import org.connectbot.ui.common.findColorOption
@@ -110,6 +111,24 @@ fun HostEditorScreen(
     onNavigateToKnownHosts: (UUID) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val keyboardDraft by viewModel.keyboardDraft.collectAsState()
+    val automationDraft by viewModel.automationDraft.collectAsState()
+    val automationMacros by viewModel.automationMacros.collectAsState()
+    var showDraftAutomation by rememberSaveable { mutableStateOf(false) }
+    if (showDraftAutomation) {
+        KeyboardWorkflowDialog(onDismiss = { showDraftAutomation = false }) {
+            AutomationEditorScreen(
+                onNavigateBack = { showDraftAutomation = false },
+                draftHostId = viewModel.draftHostId,
+                initialActions = automationDraft?.let(AutomationDraftCodec::decode).orEmpty(),
+                initialMacros = automationMacros,
+                onApplyDraft = { actions, macros ->
+                    viewModel.updateAutomationDraft(actions, macros)
+                    showDraftAutomation = false
+                },
+            )
+        }
+    }
     androidx.lifecycle.compose.LifecycleResumeEffect(viewModel) {
         viewModel.refreshAlgorithms()
         onPauseOrDispose { }
@@ -138,7 +157,18 @@ fun HostEditorScreen(
         onWantSessionChange = viewModel::updateWantSession,
         onStayConnectedChange = viewModel::updateStayConnected,
         onQuickDisconnectChange = viewModel::updateQuickDisconnect,
-        onEditAutomation = { onNavigateToAutomation(uiState.hostId) },
+        onEditAutomation = { if (uiState.hostId == EntityIds.NONE) showDraftAutomation = true else onNavigateToAutomation(uiState.hostId) },
+        keyboardContent = {
+            KeyboardLayoutSelector(
+                selected = uiState.keyboardLayoutId,
+                onSelect = viewModel::updateKeyboardLayoutId,
+                inheritedId = uiState.availableProfiles.find { it.id == (uiState.profileId ?: EntityIds.DEFAULT_PROFILE) }?.keyboardLayoutId,
+                source = uiState.availableProfiles.find { it.id == (uiState.profileId ?: EntityIds.DEFAULT_PROFILE) }?.let { stringResource(R.string.keyboard_from_profile, it.name) },
+                ownerName = uiState.nickname.ifBlank { uiState.hostname },
+                pendingDraft = keyboardDraft,
+                onDraft = viewModel::updateKeyboardDraft,
+            )
+        },
         onJumpHostChange = viewModel::updateJumpHostId,
         onIpVersionChange = viewModel::updateIpVersion,
         onTelnetEchoModeChange = viewModel::updateTelnetEchoMode,
@@ -184,6 +214,7 @@ fun HostEditorScreenContent(
     onClearPassword: () -> Unit,
     onSaveHost: suspend () -> Boolean,
     modifier: Modifier = Modifier,
+    keyboardContent: @Composable () -> Unit = {},
     onCryptoChange: (HostCryptoConfig) -> Unit = {},
     onResolveCrypto: suspend (HostCryptoConfig) -> SshCryptoPolicy? = { null },
     onCancelMoshInstall: () -> Unit = {},

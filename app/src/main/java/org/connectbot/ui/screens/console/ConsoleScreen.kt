@@ -21,6 +21,7 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.res.Configuration
 import androidx.annotation.VisibleForTesting
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -97,6 +98,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -163,9 +165,10 @@ import org.connectbot.ui.components.ConnectionInfoDialog
 import org.connectbot.ui.components.FloatingTextInputDialog
 import org.connectbot.ui.components.InlinePrompt
 import org.connectbot.ui.components.ResizeDialog
-import org.connectbot.ui.components.TERMINAL_KEYBOARD_HEIGHT_DP
 import org.connectbot.ui.components.TerminalKeyboard
 import org.connectbot.ui.components.UrlScanDialog
+import org.connectbot.ui.screens.keyboard.ConsoleKeyboardSettings
+import org.connectbot.ui.screens.keyboard.KeyboardWorkflowDialog
 import org.connectbot.ui.theme.terminal
 import org.connectbot.util.PreferenceConstants
 import org.connectbot.util.UrlUtils
@@ -185,8 +188,8 @@ private fun rememberHasHardwareKeyboard(): Boolean {
 
     return remember(configuration) {
         val keyboardType = configuration.keyboard
-        keyboardType == android.content.res.Configuration.KEYBOARD_QWERTY ||
-            keyboardType == android.content.res.Configuration.KEYBOARD_12KEY
+        keyboardType == Configuration.KEYBOARD_QWERTY ||
+            keyboardType == Configuration.KEYBOARD_12KEY
     }
 }
 
@@ -409,7 +412,10 @@ private fun ConsoleTerminalPage(
     modifier: Modifier = Modifier,
     terminalModifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier) {
+    val keyboardDensity = LocalDensity.current
+    var keyboardHeight by remember { mutableStateOf(0.dp) }
+    var consoleHeight by remember { mutableStateOf(480.dp) }
+    Box(modifier = modifier.onSizeChanged { consoleHeight = with(keyboardDensity) { it.height.toDp() } }) {
         val fontResult = rememberTerminalTypefaceResultFromStoredValue(bridge.fontFamily)
         val coroutineScope = rememberCoroutineScope()
         val fontSize by bridge.fontSizeFlow.collectAsState()
@@ -434,7 +440,7 @@ private fun ConsoleTerminalPage(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(
-                    bottom = if (keyboardAlwaysVisible) TERMINAL_KEYBOARD_HEIGHT_DP.dp else 0.dp,
+                    bottom = if (keyboardAlwaysVisible) keyboardHeight else 0.dp,
                 )
                 .then(terminalModifier)
                 .testTag("terminal"),
@@ -490,6 +496,7 @@ private fun ConsoleTerminalPage(
                     .testTag("terminal_keyboard"),
             ) {
                 TerminalKeyboard(
+                    modifier = Modifier.heightIn(max = consoleHeight / 2).onSizeChanged { keyboardHeight = with(keyboardDensity) { it.height.toDp() } },
                     bridge = bridge,
                     onInteraction = { handleTerminalInteraction() },
                     onHideIme = {
@@ -498,6 +505,8 @@ private fun ConsoleTerminalPage(
                     onShowIme = {
                         onShowSoftwareKeyboardChange(true)
                     },
+                    onOpenTextInput = onTextInputRequest,
+                    onPasteRequest = onPasteRequest,
                     onScrollInProgressChange = onKeyboardScrollInProgressChange,
                     imeVisible = imeVisible,
                     playAnimation = !hasPlayedKeyboardAnimation,
@@ -675,6 +684,7 @@ fun ConsoleScreen(
     val currentBridge = uiState.bridges
         .getOrNull(uiState.currentBridgeIndex)
     val currentBridgeId = currentBridge?.host?.id
+    var showKeyboardSettings by rememberSaveable(currentBridgeId) { mutableStateOf(false) }
     var showConnectionInfoDialog by remember(currentBridgeId) { mutableStateOf(false) }
     val automationState by currentBridge?.automationState?.collectAsState()
         ?: remember { mutableStateOf(org.connectbot.service.automation.AutomationState()) }
@@ -1130,6 +1140,11 @@ fun ConsoleScreen(
             }
         }
 
+        if (showKeyboardSettings && currentBridge != null) {
+            KeyboardWorkflowDialog(onDismiss = { showKeyboardSettings = false }) {
+                ConsoleKeyboardSettings(currentBridge, onNavigateBack = { showKeyboardSettings = false })
+            }
+        }
         if (showConnectionInfoDialog) {
             var details by remember(currentBridgeId) { mutableStateOf(viewModel.connectionDetails()) }
             LaunchedEffect(currentBridgeId, viewModel) {
@@ -1416,6 +1431,15 @@ fun ConsoleScreen(
                                     showResizeDialog = true
                                 },
                                 enabled = sessionOpen,
+                            )
+
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.keyboard_settings_title)) },
+                                onClick = {
+                                    showMenu = false
+                                    showKeyboardSettings = true
+                                },
+                                enabled = currentBridge != null,
                             )
 
                             // Compose mode (IME) toggle — persistent entry so users can always

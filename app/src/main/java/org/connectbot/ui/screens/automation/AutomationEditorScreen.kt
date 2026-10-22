@@ -17,6 +17,7 @@
 
 package org.connectbot.ui.screens.automation
 
+import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -44,7 +45,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -77,6 +77,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import org.connectbot.R
@@ -84,10 +86,15 @@ import org.connectbot.data.entity.AutomationAction
 import org.connectbot.data.entity.AutomationActionType
 import org.connectbot.data.entity.AutomationFailurePolicy
 import org.connectbot.data.entity.PortForward
-import org.connectbot.service.automation.AutomationKeySupport
-import org.connectbot.terminal.VTermKey
+import org.connectbot.data.keyboard.KeyboardMacro
+import org.connectbot.data.keyboard.MacroFormat
+import org.connectbot.terminal.TerminalKeyCatalog
 import org.connectbot.ui.components.EditorScaffold
 import org.connectbot.ui.components.SpecialCharVisualTransformation
+import org.connectbot.ui.components.TerminalKeyPicker
+import org.connectbot.ui.components.displayName
+import org.connectbot.ui.screens.keyboard.KeyboardSettingsScreen
+import org.connectbot.ui.screens.keyboard.KeyboardWorkflowDialog
 import org.connectbot.util.TerminalKeyModifiers
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -98,33 +105,12 @@ internal fun AutomationActionType.title(): Int = when (this) {
     AutomationActionType.WAIT_FOR_TEXT -> R.string.automation_wait_text
     AutomationActionType.SEND_TEXT -> R.string.automation_send_text
     AutomationActionType.SEND_KEY -> R.string.automation_send_key
+    AutomationActionType.RUN_MACRO -> R.string.automation_run_macro
     AutomationActionType.DELAY -> R.string.automation_delay
     AutomationActionType.DISCONNECT -> R.string.automation_disconnect
     AutomationActionType.ENABLE_FORWARD -> R.string.automation_enable_forward
     AutomationActionType.DISABLE_FORWARD -> R.string.automation_disable_forward
 }
-
-internal data class AutomationKey(@StringRes val label: Int?, val key: Int, val argument: String? = null) {
-    @Composable
-    fun displayName(): String = when {
-        label == null -> requireNotNull(argument)
-        argument == null -> stringResource(label)
-        else -> stringResource(label, argument)
-    }
-}
-
-internal val automationKeys = listOf(
-    AutomationKey(R.string.automation_key_enter, VTermKey.ENTER), AutomationKey(R.string.automation_key_tab, VTermKey.TAB),
-    AutomationKey(R.string.automation_key_escape, VTermKey.ESCAPE), AutomationKey(R.string.automation_key_backspace, VTermKey.BACKSPACE),
-    AutomationKey(R.string.automation_key_delete, VTermKey.DEL), AutomationKey(R.string.automation_key_up, VTermKey.UP),
-    AutomationKey(R.string.automation_key_down, VTermKey.DOWN), AutomationKey(R.string.automation_key_left, VTermKey.LEFT),
-    AutomationKey(R.string.automation_key_right, VTermKey.RIGHT), AutomationKey(R.string.automation_key_home, VTermKey.HOME),
-    AutomationKey(R.string.automation_key_end, VTermKey.END), AutomationKey(R.string.automation_key_insert, VTermKey.INS),
-    AutomationKey(R.string.automation_key_page_up, VTermKey.PAGEUP), AutomationKey(R.string.automation_key_page_down, VTermKey.PAGEDOWN),
-) + AutomationKeySupport.functionNumbers.map { AutomationKey(R.string.automation_key_function, VTermKey.FUNCTION_0 + it, argument = it.toString()) } +
-    AutomationKeySupport.characterKeys.map {
-        AutomationKey(null, it, AutomationKeySupport.characterCodePoint(it).toChar().toString())
-    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -132,8 +118,15 @@ fun AutomationEditorScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AutomationEditorViewModel = hiltViewModel(),
+    draftHostId: UUID? = null,
+    initialActions: List<AutomationAction> = emptyList(),
+    initialMacros: List<KeyboardMacro> = emptyList(),
+    onApplyDraft: ((List<AutomationAction>, List<KeyboardMacro>) -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsState()
+    LaunchedEffect(draftHostId) { draftHostId?.let { viewModel.initializeDraft(it, initialActions, initialMacros) } }
+    val macros = (state.macros + state.pendingMacros).associateBy { it.id }.values.toList()
+    var showMacroLibrary by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
     // Saving disables interaction and accessibility actions without flashing disabled colors.
@@ -164,14 +157,28 @@ fun AutomationEditorScreen(
         }
     }
 
+    BackHandler(enabled = onApplyDraft != null && !state.dirty && !state.saving) {
+        viewModel.finishDraftSession()
+        onNavigateBack()
+    }
     EditorScaffold(
         title = stringResource(R.string.hostpref_postlogin_title),
-        saveContentDescription = stringResource(R.string.automation_save),
+        saveContentDescription = stringResource(if (onApplyDraft != null) R.string.keyboard_done else R.string.automation_save),
         saveVisible = state.dirty && !state.loading && state.hostExists,
         confirmDiscard = state.dirty,
         isSaving = state.saving,
-        onNavigateBack = onNavigateBack,
-        onSave = { scope.launch { if (viewModel.save()) onNavigateBack() } },
+        onNavigateBack = {
+            if (onApplyDraft != null) viewModel.finishDraftSession()
+            onNavigateBack()
+        },
+        onSave = {
+            if (onApplyDraft != null) {
+                onApplyDraft(state.actions, state.pendingMacros)
+                viewModel.finishDraftSession()
+            } else {
+                scope.launch { if (viewModel.save()) onNavigateBack() }
+            }
+        },
         snackbarHostState = snackbarHostState,
         modifier = modifier,
     ) { padding ->
@@ -190,6 +197,7 @@ fun AutomationEditorScreen(
                     .fillMaxSize()
                     .padding(padding),
             ) {
+                if (onApplyDraft != null) Text(stringResource(R.string.automation_draft_host), modifier = Modifier.padding(16.dp))
                 state.error?.let {
                     Text(
                         stringResource(it),
@@ -237,7 +245,7 @@ fun AutomationEditorScreen(
                                             stringResource(action.type.title()),
                                             style = MaterialTheme.typography.titleMedium,
                                         )
-                                        ActionSummary(action, state.forwards)
+                                        ActionSummary(action, state.forwards, macros)
                                         Row {
                                             TextButton(
                                                 onClick = { viewModel.edit(action) },
@@ -299,14 +307,30 @@ fun AutomationEditorScreen(
         }
     }
 
+    if (showMacroLibrary) {
+        KeyboardWorkflowDialog(onDismiss = { showMacroLibrary = false }) {
+            KeyboardSettingsScreen(
+                onNavigateBack = { showMacroLibrary = false },
+                macrosOnly = true,
+                pendingMacros = macros,
+                currentReferenceId = state.editing?.id,
+                onSelectMacro = {
+                    viewModel.selectMacro(it)
+                    showMacroLibrary = false
+                },
+            )
+        }
+    }
     if (showAdd) {
         AlertDialog(
             onDismissRequest = { showAdd = false },
             title = { Text(stringResource(R.string.automation_add)) },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
+                    if (draftHostId != null) Text(stringResource(R.string.automation_no_forwards_new_host))
                     AutomationActionType.entries.forEach { type ->
                         TextButton(
+                            enabled = state.supportsForwarding || (type != AutomationActionType.ENABLE_FORWARD && type != AutomationActionType.DISABLE_FORWARD),
                             onClick = {
                                 showAdd = false
                                 viewModel.add(type)
@@ -319,13 +343,16 @@ fun AutomationEditorScreen(
             confirmButton = {},
         )
     }
-    state.editing?.let {
-        ActionEditorDialog(it, state.forwards, state.editError, viewModel::dismissEdit, viewModel::applyEdit)
+    state.editing?.takeUnless { showMacroLibrary }?.let {
+        ActionEditorDialog(it, state.forwards, macros, state.editError, viewModel::dismissEdit, viewModel::applyEdit, onManageMacros = { draft ->
+            viewModel.edit(draft)
+            showMacroLibrary = true
+        })
     }
 }
 
 @Composable
-private fun ActionSummary(action: AutomationAction, forwards: List<PortForward>) {
+private fun ActionSummary(action: AutomationAction, forwards: List<PortForward>, macros: List<KeyboardMacro>) {
     val summary = when (action.type) {
         AutomationActionType.SEND_TEXT, AutomationActionType.WAIT_FOR_TEXT ->
             SpecialCharVisualTransformation.filter(AnnotatedString(action.text)).text.text
@@ -333,7 +360,7 @@ private fun ActionSummary(action: AutomationAction, forwards: List<PortForward>)
         AutomationActionType.DELAY -> stringResource(R.string.automation_seconds, action.durationMs / 1000.0)
 
         AutomationActionType.SEND_KEY -> {
-            val keyName = automationKeys.find { it.key == action.key }?.displayName().orEmpty()
+            val keyName = TerminalKeyCatalog.byValue(action.key)?.displayName().orEmpty()
             val modifiers = buildList {
                 if (action.modifiers and TerminalKeyModifiers.SHIFT != 0) add(stringResource(R.string.automation_key_shift))
                 if (action.modifiers and TerminalKeyModifiers.CTRL != 0) add(stringResource(R.string.button_key_ctrl))
@@ -344,6 +371,8 @@ private fun ActionSummary(action: AutomationAction, forwards: List<PortForward>)
 
         AutomationActionType.ENABLE_FORWARD, AutomationActionType.DISABLE_FORWARD ->
             forwards.find { it.id == action.forwardId }?.nickname ?: stringResource(R.string.automation_forward_missing)
+
+        AutomationActionType.RUN_MACRO -> macros.find { it.id == action.macroId }?.name ?: stringResource(R.string.keyboard_missing_macro)
 
         AutomationActionType.DISCONNECT -> ""
     }
@@ -370,9 +399,11 @@ private fun ActionSummary(action: AutomationAction, forwards: List<PortForward>)
 private fun ActionEditorDialog(
     action: AutomationAction,
     forwards: List<PortForward>,
+    macros: List<KeyboardMacro>,
     error: Int?,
     onDismiss: () -> Unit,
     onSave: (AutomationAction) -> Unit,
+    onManageMacros: (AutomationAction) -> Unit,
 ) {
     val saver = remember {
         Saver<AutomationAction, String>(
@@ -380,9 +411,9 @@ private fun ActionEditorDialog(
             restore = { AutomationDraftCodec.decode(it).single() },
         )
     }
-    var draft by rememberSaveable(action.id, stateSaver = saver) { mutableStateOf(action) }
+    var draft by rememberSaveable(action.id, action.macroId, stateSaver = saver) { mutableStateOf(action) }
     var seconds by rememberSaveable(action.id) { mutableStateOf((action.durationMs / 1000.0).toString()) }
-    var keyMenu by remember { mutableStateOf(false) }
+    var macroMenu by remember { mutableStateOf(false) }
     var forwardMenu by remember { mutableStateOf(false) }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -414,34 +445,19 @@ private fun ActionEditorDialog(
                         label = { Text(stringResource(if (action.type == AutomationActionType.DELAY) R.string.automation_duration else R.string.automation_timeout)) },
                     )
                 }
-                if (action.type == AutomationActionType.SEND_KEY) {
-                    Column {
-                        TextButton(onClick = { keyMenu = true }) {
-                            Text(stringResource(R.string.automation_key) + ": " + automationKeys.find { it.key == draft.key }?.displayName().orEmpty())
-                        }
-                        DropdownMenu(keyMenu, onDismissRequest = { keyMenu = false }) {
-                            automationKeys.forEach { key ->
-                                DropdownMenuItem(text = { Text(key.displayName()) }, onClick = {
-                                    draft = draft.copy(key = key.key)
-                                    keyMenu = false
-                                })
-                            }
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf(
-                                TerminalKeyModifiers.SHIFT to R.string.automation_key_shift,
-                                TerminalKeyModifiers.CTRL to R.string.button_key_ctrl,
-                                TerminalKeyModifiers.ALT to R.string.button_key_alt,
-                            ).forEach { (mask, label) ->
-                                FilterChip(
-                                    selected = draft.modifiers and mask != 0,
-                                    onClick = { draft = draft.copy(modifiers = draft.modifiers xor mask) },
-                                    label = { Text(stringResource(label)) },
-                                )
-                            }
-                        }
-                    }
+                if (action.type == AutomationActionType.RUN_MACRO) {
+                    Text(macros.find { it.id == draft.macroId }?.name ?: stringResource(R.string.macro_none))
+                    TextButton(onClick = { onManageMacros(draft) }) { Text(stringResource(R.string.macro_choose)) }
                 }
+                if (action.type == AutomationActionType.SEND_KEY) {
+                    TerminalKeyPicker(
+                        target = TerminalKeyCatalog.byValue(draft.key)?.target.orEmpty(),
+                        modifiers = draft.modifiers,
+                        onKeyChange = { draft = draft.copy(key = it.value) },
+                        onModifiersChange = { draft = draft.copy(modifiers = it) },
+                    )
+                }
+
                 if (action.type == AutomationActionType.ENABLE_FORWARD || action.type == AutomationActionType.DISABLE_FORWARD) {
                     Column {
                         TextButton(onClick = { forwardMenu = true }) {

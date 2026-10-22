@@ -1,4 +1,6 @@
 [versions]
+json5 = "3.0.0"
+desugar = "2.1.5"
 androidGradlePlugin = "9.4.1"
 
 kotlin = "2.4.21"
@@ -24,9 +26,9 @@ navigationCompose = "2.10.2"
 navigationEvent = "1.2.0"
 activityCompose = "1.13.0"
 
-telnetlib = "0.1.0"
+telnetlib = "0.1.1"
 sshlib = "0.6.2"
-termlib = "0.3.13"
+termlib = "0.3.14"
 playServicesBasement = "18.12.0"
 playFeatureDelivery = "2.1.0"
 conscrypt = "2.7.0"
@@ -52,6 +54,7 @@ mockitoKotlin = "6.4.0"
 assertj = "3.27.7"
 robolectric = "4.17"
 kover = "0.9.11"
+jacoco = "0.8.14"
 
 media3CommonKtx = "1.11.1"
 navigationTesting = "2.10.2"
@@ -62,6 +65,9 @@ coil = "3.1.0"
 work = "2.11.1"
 
 [libraries]
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+desugar = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar" }
+json5 = { module = "de.marhali:json5-java", version.ref = "json5" }
 asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
 telnetlib = { module = "org.connectbot.telnetlib:telnetlib", version.ref = "telnetlib" }
 telnetlib-ktor = { module = "org.connectbot.telnetlib:telnetlib-ktor", version.ref = "telnetlib" }

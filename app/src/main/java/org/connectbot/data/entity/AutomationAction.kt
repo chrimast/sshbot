@@ -30,6 +30,7 @@ enum class AutomationActionType {
     WAIT_FOR_TEXT,
     SEND_TEXT,
     SEND_KEY,
+    RUN_MACRO,
     DELAY,
     DISCONNECT,
     ENABLE_FORWARD,
@@ -63,5 +64,6 @@ data class AutomationAction(
     val modifiers: Int = TerminalKeyModifiers.NONE,
     // Intentionally not a foreign key: deleting a forward must not delete an action.
     @ColumnInfo(name = "forward_id") val forwardId: UUID? = null,
+    @ColumnInfo(name = "macro_id") val macroId: UUID? = null,
     @ColumnInfo(name = "failure_policy") val failurePolicy: AutomationFailurePolicy = AutomationFailurePolicy.STOP,
 )

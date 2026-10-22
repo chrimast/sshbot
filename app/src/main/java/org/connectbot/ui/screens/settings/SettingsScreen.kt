@@ -18,6 +18,7 @@
 package org.connectbot.ui.screens.settings
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -45,6 +46,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
@@ -116,6 +118,7 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
     highlightItem: String? = null,
+    onNavigateToKeyboard: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -192,6 +195,7 @@ fun SettingsScreen(
         uiState = uiState,
         onNavigateBack = onNavigateBack,
         highlightItem = highlightItem,
+        onNavigateToKeyboard = onNavigateToKeyboard,
         onAuthOnLaunchChange = viewModel::updateAuthOnLaunch,
         onMemkeysChange = viewModel::updateMemkeys,
         onConnectionAlertsChange = viewModel::updateConnectionAlerts,
@@ -297,6 +301,7 @@ fun SettingsScreenContent(
     onRunWebDavRestore: () -> Unit,
     modifier: Modifier = Modifier,
     highlightItem: String? = null,
+    onNavigateToKeyboard: () -> Unit = {},
 ) {
     Scaffold(
         topBar = {
@@ -760,7 +765,7 @@ fun SettingsScreenContent(
     }
 }
 
-private fun buildAvailableLanguageList(context: android.content.Context): List<Pair<String, String>> {
+private fun buildAvailableLanguageList(context: Context): List<Pair<String, String>> {
     val localeTags = mutableListOf<String>()
     val parser = context.resources.getXml(R.xml._generated_res_locale_config)
     while (parser.next() != XmlPullParser.END_DOCUMENT) {

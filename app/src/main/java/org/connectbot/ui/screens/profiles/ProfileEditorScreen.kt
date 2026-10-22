@@ -72,6 +72,7 @@ import org.connectbot.ui.common.getLocalizedColorSchemeDescription
 import org.connectbot.ui.common.getLocalizedFontDisplayName
 import org.connectbot.ui.common.InputFieldShape
 import org.connectbot.ui.components.FontDownloadProgressDialog
+import org.connectbot.ui.screens.keyboard.KeyboardLayoutSelector
 import org.connectbot.util.LocalFontProvider
 import org.connectbot.util.TerminalFont
 import java.util.UUID
@@ -85,6 +86,7 @@ fun ProfileEditorScreen(
     viewModel: ProfileEditorViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val keyboardDraft by viewModel.keyboardDraft.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.saveError) {
@@ -651,7 +653,7 @@ private fun ForceSizeSelector(
         )
 
         Row(
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(

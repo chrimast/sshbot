@@ -344,6 +344,7 @@ android {
     }
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -439,6 +440,8 @@ androidComponents {
 }
 
 kover {
+    // Filter compiler-generated Compose branches while retaining application logic coverage.
+    useJacoco(libs.versions.jacoco.get())
     reports {
         filters {
             excludes {
@@ -529,9 +532,9 @@ tasks.withType<Test>().configureEach {
 }
 
 // Generate filtered export schema from Room schema
-// Only includes tables needed for export/import (profiles, hosts, port_forwards)
+// Includes keyboard configuration and host/profile tables in the export schema
 val generateExportSchema by tasks.registering {
-    val exportTables = setOf("profiles", "hosts", "port_forwards", "automation_actions")
+    val exportTables = setOf("profiles", "hosts", "port_forwards", "automation_actions", "keyboard_layouts", "keyboard_macros", "keyboard_items")
     val excludedFields = setOf("last_connect", "host_key_algo")
 
     // Read schema version from Room's @Database annotation.
@@ -603,6 +606,8 @@ tasks
     }
 
 dependencies {
+    coreLibraryDesugaring(libs.desugar)
+    implementation(libs.json5)
     implementation(libs.sshlib)
     implementation(libs.termlib)
     implementation(libs.telnetlib)
@@ -610,6 +615,7 @@ dependencies {
     implementation(libs.androidx.media3.common.ktx)
     implementation(libs.androidx.navigation.testing)
     implementation(libs.androidx.ui)
+    implementation(libs.reorderable)
     "googleImplementation"(libs.play.services.basement)
     "googleImplementation"(libs.play.feature.delivery)
     testImplementation(libs.play.feature.delivery)
