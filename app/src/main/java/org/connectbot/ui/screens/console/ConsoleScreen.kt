@@ -1114,7 +1114,7 @@ fun ConsoleScreen(
                                 },
                                 onKeyboardScrollInProgressChange = { inProgress ->
                                     keyboardScrollInProgress = inProgress
-                                    handleTerminalInteraction(resetTitleBarTimer = false)
+                                    handleTerminalInteraction(isInteraction = inProgress, resetTitleBarTimer = false)
                                 },
                                 onSelectionControllerChange = { selectionController = it },
                                 onComposeControllerChange = { composeController = it },
