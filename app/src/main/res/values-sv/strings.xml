@@ -956,7 +956,7 @@
   <string name="keyboard_key_paste" tools:machine_translated="true">Klistra in</string>
   <string name="keyboard_shortcut_description" tools:machine_translated="true">%1$s (%2$s)</string>
   <string name="keyboard_action_stop_full" tools:machine_translated="true">Avbryt</string>
-  <string name="keyboard_action_history_full" tools:machine_translated="true">Sökhistorik</string>
+  <string name="keyboard_action_history_full" tools:machine_translated="true">Sök i kommandohistoriken</string>
   <string name="keyboard_action_mode_full" tools:machine_translated="true">Växla mellan olika behörighetslägen</string>
   <string name="keyboard_action_newline_full" tools:machine_translated="true">Infoga ny rad</string>
   <string name="keyboard_action_log_full" tools:machine_translated="true">Visa/dölj transkription</string>
@@ -1019,7 +1019,7 @@
   <string name="keyboard_outline_color" tools:machine_translated="true">Konturfärg</string>
   <string name="keyboard_color_value" tools:machine_translated="true">%1$s: %2$s</string>
   <string name="keyboard_theme_color" tools:machine_translated="true">Standardtema</string>
-  <string name="keyboard_background_opacity" tools:machine_translated="true">Bakgrundens genomskinlighet: %1$d %%</string>
+  <string name="keyboard_background_opacity" tools:machine_translated="true">Bakgrundens opacitet: %1$d %%</string>
   <string name="keyboard_outlined" tools:machine_translated="true">Med kontur</string>
   <string name="keyboard_outline_thickness" tools:machine_translated="true">Linjebredd: %1$.1f dp</string>
   <string name="keyboard_reset_appearance" tools:machine_translated="true">Återställ utseendet.</string>
@@ -1083,4 +1083,14 @@
   <string name="keyboard_builtin_presets" tools:machine_translated="true">Förinställda mallar</string>
   <string name="keyboard_builtin_presets_help" tools:machine_translated="true">De förinställda mallarna som ingår i systemet förblir oförändrade. När du redigerar dem skapas en egen kopia.</string>
   <string name="keyboard_builtin_preset" tools:machine_translated="true">Förinställd mall</string>
+  <string name="pref_zmodem_title" tools:machine_translated="true">Aktivera Z-Modem-överföringar</string>
+  <string name="pref_zmodem_summary" tools:machine_translated="true">Identifiera förfrågningar om att ladda upp och ladda ner filer via SSH och Telnet.</string>
+  <string name="zmodem_title" tools:machine_translated="true">Z-Modem-filöverföring</string>
+  <string name="zmodem_progress" tools:machine_translated="true">%1$s: %2$d byte</string>
+  <string name="zmodem_cancel" tools:machine_translated="true">Avbryt överföringen</string>
+  <string name="zmodem_select" tools:machine_translated="true">Välj filer eller en nedladdningsmapp.</string>
+  <string name="zmodem_failed" tools:machine_translated="true">Filöverföringen misslyckades.</string>
+  <string name="zmodem_dismiss" tools:machine_translated="true">Avbryt</string>
+  <string name="zmodem_progress_total" tools:machine_translated="true">%1$s: %2$d av %3$d byte</string>
+  <string name="zmodem_cancelling" tools:machine_translated="true">Avbryter överföringen …</string>
 </resources>

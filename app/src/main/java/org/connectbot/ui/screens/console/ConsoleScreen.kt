@@ -52,7 +52,10 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imeAnimationSource
 import androidx.compose.foundation.layout.imeAnimationTarget
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -64,6 +67,7 @@ import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -83,6 +87,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -117,6 +122,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.keepScreenOn
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -125,6 +131,10 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
@@ -140,6 +150,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
 import androidx.preference.PreferenceManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -156,6 +167,7 @@ import org.connectbot.terminal.ImeShortcutInputMode
 import org.connectbot.terminal.ProgressState
 import org.connectbot.terminal.SelectionController
 import org.connectbot.terminal.Terminal
+import org.connectbot.terminal.TerminalDimensions
 import org.connectbot.ui.LoadingScreen
 import org.connectbot.data.PresetScriptRepository
 import org.connectbot.ui.common.InputFieldShape
@@ -173,10 +185,12 @@ import org.connectbot.ui.theme.terminal
 import org.connectbot.util.PreferenceConstants
 import org.connectbot.util.UrlUtils
 import org.connectbot.util.rememberTerminalTypefaceResultFromStoredValue
+import org.connectbot.util.terminalTypefaceWithWeight
 import timber.log.Timber
 import java.util.UUID
 import kotlin.math.abs
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 /**
  * Check if a hardware keyboard is currently attached to the device.
@@ -198,6 +212,66 @@ const val AUTO_HIDE_DELAY_MS = 3000L
 
 internal object ConsoleTestTags {
     const val AUTH_BANNER_MESSAGE = "auth_banner_message"
+}
+
+private const val FONT_SIZE_NOTICE_TIMEOUT_MS = 5_000L
+
+private data class FontSizeNoticeState(
+    val profile: TerminalBridge.ActiveProfile?,
+    val size: Int,
+    val revision: Int,
+)
+
+@Composable
+internal fun FontSizeNotice(
+    size: Int,
+    dimensions: TerminalDimensions?,
+    canSave: Boolean,
+    onSave: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val detailsDescription = if (dimensions != null) {
+        stringResource(R.string.console_font_size_dimensions_description, size, dimensions.columns, dimensions.rows)
+    } else {
+        stringResource(R.string.console_font_size_current_description, size)
+    }
+    val saveDescription = stringResource(R.string.console_font_size_save_description)
+    Surface(
+        modifier = modifier.widthIn(max = 320.dp).semantics { liveRegion = LiveRegionMode.Polite },
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shadowElevation = 6.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = if (dimensions != null) {
+                        stringResource(R.string.console_font_size_dimensions, size, dimensions.columns, dimensions.rows)
+                    } else {
+                        stringResource(R.string.console_font_size_current, size)
+                    },
+                    modifier = Modifier.semantics { contentDescription = detailsDescription },
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Text(
+                    text = stringResource(if (canSave) R.string.console_font_size_shared_profile else R.string.console_font_size_profile_unavailable),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            TextButton(
+                onClick = onSave,
+                enabled = canSave,
+                modifier = Modifier.semantics { contentDescription = saveDescription },
+            ) {
+                Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(stringResource(R.string.console_font_size_save))
+            }
+        }
+    }
 }
 
 internal fun handleConsoleShortcut(
@@ -419,6 +493,10 @@ private fun ConsoleTerminalPage(
         val fontResult = rememberTerminalTypefaceResultFromStoredValue(bridge.fontFamily)
         val coroutineScope = rememberCoroutineScope()
         val fontSize by bridge.fontSizeFlow.collectAsState()
+        val fontWeight by bridge.fontWeightFlow.collectAsState()
+        val terminalTypeface = remember(fontResult.typeface, fontWeight) {
+            terminalTypefaceWithWeight(fontResult.typeface, fontWeight)
+        }
         val delKeyMode by bridge.delKeyModeFlow.collectAsState()
 
         LaunchedEffect(bridge, isActive) {
@@ -444,7 +522,7 @@ private fun ConsoleTerminalPage(
                 )
                 .then(terminalModifier)
                 .testTag("terminal"),
-            typeface = fontResult.typeface,
+            typeface = terminalTypeface,
             initialFontSize = fontSize.sp,
             keyboardEnabled = true,
             showSoftKeyboard = showSoftwareKeyboard && isActive,
@@ -683,7 +761,26 @@ fun ConsoleScreen(
 
     val currentBridge = uiState.bridges
         .getOrNull(uiState.currentBridgeIndex)
+    currentBridge?.takeIf { it.transport?.supportsZmodem == true }?.let { key(it) { ZmodemTransferDialog(it) } }
     val currentBridgeId = currentBridge?.host?.id
+    var fontSizeNotice by remember(currentBridge) { mutableStateOf<FontSizeNoticeState?>(null) }
+    val activeProfile by currentBridge?.activeProfile?.collectAsState() ?: remember { mutableStateOf(null) }
+    val accessibilityManager = LocalAccessibilityManager.current
+    LaunchedEffect(fontSizeNotice?.revision, activeProfile) {
+        val notice = fontSizeNotice ?: return@LaunchedEffect
+        if (notice.profile != activeProfile) {
+            fontSizeNotice = null
+            return@LaunchedEffect
+        }
+        val timeout = accessibilityManager?.calculateRecommendedTimeoutMillis(
+            originalTimeoutMillis = FONT_SIZE_NOTICE_TIMEOUT_MS,
+            containsIcons = false,
+            containsText = true,
+            containsControls = true,
+        ) ?: FONT_SIZE_NOTICE_TIMEOUT_MS
+        delay(timeout)
+        fontSizeNotice = null
+    }
     var showKeyboardSettings by rememberSaveable(currentBridgeId) { mutableStateOf(false) }
     var showConnectionInfoDialog by remember(currentBridgeId) { mutableStateOf(false) }
     val automationState by currentBridge?.automationState?.collectAsState()
@@ -1006,6 +1103,22 @@ fun ConsoleScreen(
         }
     }
 
+    fun adjustFontSize(increase: Boolean) {
+        val bridge = currentBridge ?: return
+        val before = bridge.fontSizeFlow.value
+        if (increase) bridge.increaseFontSize() else bridge.decreaseFontSize()
+        val after = bridge.fontSizeFlow.value
+        if (after != before && after > 0) {
+            fontSizeNotice = FontSizeNoticeState(
+                profile = bridge.activeProfile.value,
+                size = after.roundToInt(),
+                revision = (fontSizeNotice?.revision ?: 0) + 1,
+            )
+        }
+    }
+
+    val fontSizeSaveError = stringResource(R.string.console_font_size_save_error)
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         modifier = modifier
@@ -1020,8 +1133,8 @@ fun ConsoleScreen(
                 volumeKeysChangeFontSize = volumeKeysChangeFontSize,
                 copySelection = { selectionController?.copySelection() },
                 pasteClipboardContents = { pasteClipboardContents() },
-                increaseFontSize = { currentBridge?.increaseFontSize() },
-                decreaseFontSize = { currentBridge?.decreaseFontSize() },
+                increaseFontSize = { adjustFontSize(increase = true) },
+                decreaseFontSize = { adjustFontSize(increase = false) },
             )
         }
 
@@ -1133,6 +1246,30 @@ fun ConsoleScreen(
                                 },
                                 modifier = Modifier.fillMaxSize(),
                                 terminalModifier = terminalModifier,
+                            )
+                        }
+                        fontSizeNotice?.let { notice ->
+                            val dimensions by bridge.terminalDimensions.collectAsState()
+                            FontSizeNotice(
+                                size = notice.size,
+                                dimensions = dimensions,
+                                canSave = notice.profile != null,
+                                onSave = {
+                                    val profile = notice.profile ?: return@FontSizeNotice
+                                    fontSizeNotice = null
+                                    coroutineScope.launch {
+                                        val saved = try {
+                                            viewModel.saveFontSize(bridge, profile, notice.size)
+                                        } catch (e: CancellationException) {
+                                            throw e
+                                        } catch (e: Exception) {
+                                            Timber.e(e, "Failed to save terminal font size")
+                                            false
+                                        }
+                                        if (!saved) snackbarHostState.showSnackbar(fontSizeSaveError)
+                                    }
+                                },
+                                modifier = Modifier.align(Alignment.TopCenter).padding(8.dp),
                             )
                         }
                     }

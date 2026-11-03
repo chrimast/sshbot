@@ -972,7 +972,7 @@
   <string name="keyboard_key_paste" tools:machine_translated="true">لصق</string>
   <string name="keyboard_shortcut_description" tools:machine_translated="true">%1$s (%2$s)</string>
   <string name="keyboard_action_stop_full" tools:machine_translated="true">مقاطعة</string>
-  <string name="keyboard_action_history_full" tools:machine_translated="true">سجل البحث</string>
+  <string name="keyboard_action_history_full" tools:machine_translated="true">البحث في سجل الأوامر</string>
   <string name="keyboard_action_mode_full" tools:machine_translated="true">تبديل أوضاع الأذونات</string>
   <string name="keyboard_action_newline_full" tools:machine_translated="true">إدراج سطر جديد</string>
   <string name="keyboard_action_log_full" tools:machine_translated="true">تبديل عرض النص المكتوب</string>
@@ -1035,7 +1035,7 @@
   <string name="keyboard_outline_color" tools:machine_translated="true">لون الحدود الخارجية</string>
   <string name="keyboard_color_value" tools:machine_translated="true">%1$s: %2$s</string>
   <string name="keyboard_theme_color" tools:machine_translated="true">النمط الافتراضي</string>
-  <string name="keyboard_background_opacity" tools:machine_translated="true">شفافية الخلفية: %1$d%%</string>
+  <string name="keyboard_background_opacity" tools:machine_translated="true">عتامة الخلفية: %1$d%%</string>
   <string name="keyboard_outlined" tools:machine_translated="true">مُحدَّد</string>
   <string name="keyboard_outline_thickness" tools:machine_translated="true">سمك حافة المفتاح: %1$.1f وحدة قياس مستقلة عن الكثافة.</string>
   <string name="keyboard_reset_appearance" tools:machine_translated="true">إعادة تعيين المظهر</string>
@@ -1079,7 +1079,7 @@
   <string name="keyboard_repeat_off" tools:machine_translated="true">اضغط مرة واحدة.</string>
   <string name="keyboard_repeat_on" tools:machine_translated="true">يكرر الضغط طالما استمر الضغط عليه.</string>
   <string name="keyboard_advanced_summary" tools:machine_translated="true">الصف، والعمود، وعرض المفتاح</string>
-  <string name="keyboard_usage_count" tools:machine_translated="true">يستخدمه %1$d مستخدم.</string>
+  <string name="keyboard_usage_count" tools:machine_translated="true">عدد مواضع الاستخدام: %1$d</string>
   <string name="keyboard_remove_key_message" tools:machine_translated="true">هل نُزيل هذا الزر من التصميم الأولي؟</string>
   <string name="keyboard_key_discard_title" tools:machine_translated="true">هل تريد تطبيق التغييرات على المفاتيح؟</string>
   <string name="keyboard_key_discard_message" tools:machine_translated="true">طبِّق هذه التغييرات على التصميم، أو تجاهلها.</string>
@@ -1099,4 +1099,14 @@
   <string name="keyboard_builtin_presets" tools:machine_translated="true">الإعدادات المسبقة المدمجة</string>
   <string name="keyboard_builtin_presets_help" tools:machine_translated="true">تظل الإعدادات المسبقة المدمجة كما هي. يؤدي التعديل إلى إنشاء نسخة خاصة بك.</string>
   <string name="keyboard_builtin_preset" tools:machine_translated="true">إعداد مسبق مُضمَّن</string>
+  <string name="pref_zmodem_title" tools:machine_translated="true">تفعيل عمليات نقل الملفات باستخدام بروتوكول Z-Modem.</string>
+  <string name="pref_zmodem_summary" tools:machine_translated="true">اكتشاف طلبات تحميل وتنزيل الملفات عن بُعد عبر بروتوكولي SSH و Telnet.</string>
+  <string name="zmodem_title" tools:machine_translated="true">نقل ملفات باستخدام بروتوكول Z-Modem</string>
+  <string name="zmodem_progress" tools:machine_translated="true">%1$s: %2$d بايت</string>
+  <string name="zmodem_cancel" tools:machine_translated="true">إلغاء النقل</string>
+  <string name="zmodem_select" tools:machine_translated="true">حدد الملفات أو مجلد التنزيل.</string>
+  <string name="zmodem_failed" tools:machine_translated="true">فشل نقل الملف.</string>
+  <string name="zmodem_dismiss" tools:machine_translated="true">إغلاق</string>
+  <string name="zmodem_progress_total" tools:machine_translated="true">%1$s: %2$d من أصل %3$d بايت.</string>
+  <string name="zmodem_cancelling" tools:machine_translated="true">جاري إلغاء عملية النقل…</string>
 </resources>

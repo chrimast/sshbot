@@ -71,6 +71,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberSliderState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -97,14 +98,11 @@ import org.connectbot.data.EntityIds
 import org.connectbot.terminal.ImeShortcutInputMode
 import org.connectbot.ui.ObservePermissionOnResume
 import org.connectbot.ui.PreviewScreen
-import org.connectbot.ui.common.getLocalizedFontDisplayName
 import org.connectbot.ui.components.FontDownloadProgressDialog
 import org.connectbot.ui.components.TextInputAlertDialog
 import org.connectbot.ui.theme.ConnectBotTheme
 import org.connectbot.util.LanguageDownloadState
-import org.connectbot.util.LocalFontProvider
 import org.connectbot.util.PreferenceConstants
-import org.connectbot.util.TerminalFont
 import org.connectbot.util.ThemeMode
 import org.connectbot.util.isNotificationPermissionGranted
 import org.connectbot.ui.common.InputFieldShape
@@ -204,7 +202,6 @@ fun SettingsScreen(
         onScrollbackChange = viewModel::updateScrollback,
         onAddCustomTerminalType = viewModel::addCustomTerminalType,
         onRemoveCustomTerminalType = viewModel::removeCustomTerminalType,
-        onFontFamilyChange = viewModel::updateFontFamily,
         onAddCustomFont = viewModel::addCustomFont,
         onRemoveCustomFont = viewModel::removeCustomFont,
         onClearFontError = viewModel::clearFontValidationError,
@@ -221,6 +218,7 @@ fun SettingsScreen(
         onSwipeSessionsChange = viewModel::updateSwipeSessions,
         onVolumeFontChange = viewModel::updateVolumeFont,
         onKeepAliveChange = viewModel::updateKeepAlive,
+        onZmodemChange = viewModel::updateZmodem,
         onAlwaysVisibleChange = viewModel::updateAlwaysVisible,
         onImeToggleKeyChange = viewModel::updateImeToggleKey,
         onImeShortcutInputModeChange = viewModel::updateImeShortcutInputMode,
@@ -260,7 +258,6 @@ fun SettingsScreenContent(
     onScrollbackChange: (String) -> Unit,
     onAddCustomTerminalType: (String) -> Unit,
     onRemoveCustomTerminalType: (String) -> Unit,
-    onFontFamilyChange: (String) -> Unit,
     onAddCustomFont: (String) -> Unit,
     onRemoveCustomFont: (String) -> Unit,
     onClearFontError: () -> Unit,
@@ -301,6 +298,7 @@ fun SettingsScreenContent(
     onRunWebDavRestore: () -> Unit,
     modifier: Modifier = Modifier,
     highlightItem: String? = null,
+    onZmodemChange: (Boolean) -> Unit = {},
     onNavigateToKeyboard: () -> Unit = {},
 ) {
     Scaffold(
@@ -1371,9 +1369,8 @@ private fun SliderPreference(
                 style = MaterialTheme.typography.bodyLarge,
             )
             Slider(
-                value = value,
+                state = sliderState,
                 onValueChange = onValueChange,
-                valueRange = 0f..1f,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 2.dp),
@@ -1796,7 +1793,6 @@ private fun SettingsScreenPreview() {
             onScrollbackChange = {},
             onAddCustomTerminalType = {},
             onRemoveCustomTerminalType = {},
-            onFontFamilyChange = {},
             onAddCustomFont = {},
             onRemoveCustomFont = {},
             onClearFontError = {},

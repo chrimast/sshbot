@@ -68,6 +68,7 @@ import org.connectbot.service.automation.AutomationSession
 import org.connectbot.service.automation.AutomationState
 import org.connectbot.terminal.DelKeyMode
 import org.connectbot.terminal.ProgressState
+import org.connectbot.terminal.TerminalDimensions
 import org.connectbot.terminal.TerminalEmulator
 import org.connectbot.terminal.TerminalEmulatorFactory
 import org.connectbot.terminal.UrlScanScope
@@ -75,6 +76,7 @@ import org.connectbot.transport.AbsTransport
 import org.connectbot.transport.TransportFactory
 import org.connectbot.util.HostConstants
 import org.connectbot.util.PreferenceConstants
+import org.connectbot.util.TerminalFontWeight
 import org.connectbot.util.TerminalKeyModifiers
 import timber.log.Timber
 import java.io.IOException
@@ -151,10 +153,23 @@ class TerminalBridge {
     private sealed class TransportOperation {
         var target: AbsTransport? = null
         var inputGeneration: Long? = null
-        data class WriteData(val data: ByteArray, val completion: CompletableDeferred<Unit>? = null, val keyboard: Boolean = false) : TransportOperation()
+        data class WriteData(val data: ByteArray, val completion: CompletableDeferred<Unit>? = null, val keyboard: Boolean = false, val transfer: Boolean = false, val abort: Boolean = false) : TransportOperation()
         data class Barrier(val completion: CompletableDeferred<Unit>) : TransportOperation()
         data class SetDimensions(val columns: Int, val rows: Int, val width: Int, val height: Int) : TransportOperation()
         class Flush : TransportOperation()
+    }
+
+    val zmodem by lazy { ZmodemController(this, scope, dispatchers) }
+
+    internal fun beginTransfer() {
+        invalidateConfiguredInput()
+        cancelAutomation()
+    }
+
+    internal suspend fun writeTransfer(data: ByteArray, abort: Boolean = false, target: AbsTransport? = transport) {
+        val completion = CompletableDeferred<Unit>()
+        enqueueTransportOperation(TransportOperation.WriteData(data, completion, transfer = true, abort = abort), InputConnection(target, inputGeneration.get()))
+        completion.await()
     }
 
     private val transportOperations = Channel<TransportOperation>(Channel.UNLIMITED)
@@ -308,6 +323,23 @@ class TerminalBridge {
 
     // Profile observation
     private var currentProfileId: UUID? = null
+
+    data class ActiveProfile(val id: UUID, val assignedId: UUID?)
+
+    private val _activeProfile = MutableStateFlow<ActiveProfile?>(null)
+    val activeProfile: StateFlow<ActiveProfile?> = _activeProfile.asStateFlow()
+    private val _terminalDimensions = MutableStateFlow<TerminalDimensions?>(null)
+    val terminalDimensions: StateFlow<TerminalDimensions?> = _terminalDimensions.asStateFlow()
+
+    suspend fun saveFontSize(profile: ActiveProfile, size: Int): Boolean {
+        if (_activeProfile.value != profile) return false
+        return manager.profileRepository.updateFontSize(
+            profile.id,
+            host.id.takeUnless { host.isTemporary },
+            profile.assignedId,
+            size,
+        )
+    }
     private var inlineImagesSetting = "ask"
     private val sessionInlineImages = SessionInlineImages {
         scope.async(dispatchers.main) {
@@ -341,6 +373,9 @@ class TerminalBridge {
 
     /** Font family from profile for terminal display */
     val fontFamily: String?
+
+    private val _fontWeightFlow = MutableStateFlow(TerminalFontWeight.NORMAL)
+    val fontWeightFlow: StateFlow<Int> = _fontWeightFlow.asStateFlow()
 
     /** Force size rows from profile (null = auto-size) */
     var profileForceSizeRows: Int? = null
@@ -441,6 +476,7 @@ class TerminalBridge {
         // Load profile for this host (always returns a profile, defaulting to Default profile)
         val profile = manager.profileRepository.getByIdOrDefaultBlocking(host.profileId)
         currentProfileId = host.profileId
+        _activeProfile.value = ActiveProfile(profile.id, host.profileId)
 
         emulation = profile.emulation
         scrollback = manager.getScrollback()
@@ -458,6 +494,7 @@ class TerminalBridge {
         // Store encoding and font family from profile for later use
         encoding = profile.encoding
         fontFamily = profile.fontFamily
+        _fontWeightFlow.value = profile.fontWeight
 
         // Store force size from profile
         profileForceSizeRows = profile.forceSizeRows
@@ -501,6 +538,7 @@ class TerminalBridge {
                 manager.onBell(this)
             },
             onResize = {
+                _terminalDimensions.value = it
                 enqueueTransportOperation(
                     TransportOperation.SetDimensions(
                         it.columns,
@@ -528,6 +566,8 @@ class TerminalBridge {
                 _progressState.value = ProgressInfo(state, progress)
             },
         )
+
+        _terminalDimensions.value = terminalEmulator.dimensions
 
         // Apply color scheme to terminal emulator
         val ansiColors = fullColorPalette.sliceArray(0 until 16)
@@ -564,7 +604,15 @@ class TerminalBridge {
                         is TransportOperation.WriteData -> {
                             if (operation.completion?.isCancelled == true) continue
                             val t = operationTransport ?: throw IOException("Transport unavailable")
-                            if (operation.keyboard) {
+                            if (zmodem.active && !operation.transfer) {
+                                operation.completion?.completeExceptionally(IOException("File transfer active"))
+                                continue
+                            }
+                            if (operation.abort) {
+                                t.writeTransferAbort(operation.data)
+                            } else if (operation.transfer) {
+                                t.writeTransfer(operation.data)
+                            } else if (operation.keyboard) {
                                 t.writeKeyboardInput(operation.data)
                             } else {
                                 t.write(operation.data)
@@ -626,13 +674,17 @@ class TerminalBridge {
     }
 
     private fun enqueueTransportOperation(operation: TransportOperation, connection: InputConnection? = null) {
+        if (operation is TransportOperation.WriteData && !operation.transfer && zmodem.active) {
+            operation.completion?.completeExceptionally(IOException("File transfer active"))
+            return
+        }
         operation.target = if (connection != null) connection.transport else transport
-        operation.inputGeneration = connection?.generation
+        operation.inputGeneration = connection?.generation ?: inputGeneration.get()
         transportOperations.trySend(operation)
     }
 
     internal fun displayLocalEcho(source: AbsTransport, bytes: ByteArray) {
-        if (transport === source) terminalEmulator.writeInput(bytes)
+        if (transport === source && !zmodem.active) terminalEmulator.writeInput(bytes)
     }
 
     /**
@@ -664,6 +716,7 @@ class TerminalBridge {
                     if (newProfileId != currentProfileId) {
                         Timber.d("Host profile changed from $currentProfileId to $newProfileId")
                         currentProfileId = newProfileId
+                        _activeProfile.value = null
                     }
 
                     // Observe the current profile for attribute changes
@@ -695,6 +748,8 @@ class TerminalBridge {
      * Apply profile settings to the terminal.
      */
     private fun applyProfileSettings(profile: Profile) {
+        _activeProfile.value = ActiveProfile(profile.id, currentProfileId)
+        _fontWeightFlow.value = profile.fontWeight
         if (inlineImagesSetting != profile.inlineImages) {
             inlineImagesSetting = profile.inlineImages
             terminalEmulator.setInlineImages(sessionInlineImages.policy(inlineImagesSetting))
@@ -1110,6 +1165,7 @@ class TerminalBridge {
      * IO_ERROR already marked disconnected.
      */
     fun dispatchDisconnect(reason: DisconnectReason) {
+        zmodem.disconnected()
         invalidateConfiguredInput()
         cancelAutomation()
         // We don't need to do this multiple times.

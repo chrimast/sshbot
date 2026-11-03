@@ -956,7 +956,7 @@
   <string name="keyboard_key_paste" tools:machine_translated="true">Indsæt</string>
   <string name="keyboard_shortcut_description" tools:machine_translated="true">%1$s (%2$s)</string>
   <string name="keyboard_action_stop_full" tools:machine_translated="true">Afbryd</string>
-  <string name="keyboard_action_history_full" tools:machine_translated="true">Søgehistorik</string>
+  <string name="keyboard_action_history_full" tools:machine_translated="true">Søg i kommandohistorikken</string>
   <string name="keyboard_action_mode_full" tools:machine_translated="true">Skift mellem tilladelsestilstande</string>
   <string name="keyboard_action_newline_full" tools:machine_translated="true">Indsæt linjeskift</string>
   <string name="keyboard_action_log_full" tools:machine_translated="true">Vis/skjul transskription</string>
@@ -1019,7 +1019,7 @@
   <string name="keyboard_outline_color" tools:machine_translated="true">Omridsfarve</string>
   <string name="keyboard_color_value" tools:machine_translated="true">%1$s: %2$s</string>
   <string name="keyboard_theme_color" tools:machine_translated="true">Standardtema</string>
-  <string name="keyboard_background_opacity" tools:machine_translated="true">Baggrundsgennemsigtighed: %1$d%%</string>
+  <string name="keyboard_background_opacity" tools:machine_translated="true">Baggrundens uigennemsigtighed: %1$d%%</string>
   <string name="keyboard_outlined" tools:machine_translated="true">Med omrids</string>
   <string name="keyboard_outline_thickness" tools:machine_translated="true">Linjetykkelse: %1$.1f dp</string>
   <string name="keyboard_reset_appearance" tools:machine_translated="true">Nulstil udseende</string>
@@ -1083,4 +1083,14 @@
   <string name="keyboard_builtin_presets" tools:machine_translated="true">Indbyggede skabeloner</string>
   <string name="keyboard_builtin_presets_help" tools:machine_translated="true">De forudindstillede standardindstillinger ændres ikke. Når du redigerer, oprettes din egen kopi.</string>
   <string name="keyboard_builtin_preset" tools:machine_translated="true">Forudindstillet standardindstilling</string>
+  <string name="pref_zmodem_title" tools:machine_translated="true">Aktiver Z-Modem-overførsler</string>
+  <string name="pref_zmodem_summary" tools:machine_translated="true">Registrerer anmodninger om at uploade og downloade filer via SSH og Telnet.</string>
+  <string name="zmodem_title" tools:machine_translated="true">Z-Modem-filoverførsel</string>
+  <string name="zmodem_progress" tools:machine_translated="true">%1$s: %2$d bytes</string>
+  <string name="zmodem_cancel" tools:machine_translated="true">Annuller overførsel</string>
+  <string name="zmodem_select" tools:machine_translated="true">Vælg filer eller en mappe til download.</string>
+  <string name="zmodem_failed" tools:machine_translated="true">Filoverførslen mislykkedes.</string>
+  <string name="zmodem_dismiss" tools:machine_translated="true">Luk</string>
+  <string name="zmodem_progress_total" tools:machine_translated="true">%1$s: %2$d / %3$d bytes</string>
+  <string name="zmodem_cancelling" tools:machine_translated="true">Overførslen annulleres …</string>
 </resources>

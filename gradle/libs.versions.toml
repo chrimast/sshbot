@@ -10,7 +10,7 @@ pythonUv = "0.4.33"
 appVersioning = "1.6.0"
 room = "2.8.5"
 asm = "9.11.1"
-ksp = "2.3.12"
+ksp = "2.3.13"
 hilt = "2.60.1"
 hiltNavigationCompose = "1.4.0"
 sonarqube = "7.5.0.8588"
@@ -26,8 +26,9 @@ navigationCompose = "2.10.2"
 navigationEvent = "1.2.0"
 activityCompose = "1.13.0"
 
+zmodemlib = "0.1.1"
 telnetlib = "0.1.1"
-sshlib = "0.6.6"
+sshlib = "0.6.7"
 termlib = "0.3.14"
 playServicesBasement = "18.12.0"
 playFeatureDelivery = "2.1.0"
@@ -65,6 +66,7 @@ coil = "3.1.0"
 work = "2.11.1"
 
 [libraries]
+zmodemlib = { module = "org.connectbot.zmodemlib:zmodemlib", version.ref = "zmodemlib" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 desugar = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar" }
 json5 = { module = "de.marhali:json5-java", version.ref = "json5" }

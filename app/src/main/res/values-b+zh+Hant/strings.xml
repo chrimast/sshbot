@@ -20,7 +20,7 @@
   <string name="paste_shortcut">Ctrl-Shift-V</string>
   <string name="pubkey_generate">產生</string>
   <string name="pubkey_delete">刪除金鑰</string>
-  <string name="pubkey_gather_entropy">正在收集用戶熵</string>
+  <string name="pubkey_gather_entropy" tools:machine_translated="true">正在收集熵</string>
   <string name="pubkey_touch_prompt">觸摸此方框來收集隨機數：%1$d％完成</string>
   <string name="pubkey_touch_hint">由於金鑰產生的時候需要隨機資訊，請在下面的方框中隨意移動您的手指。</string>
   <string name="pubkey_generating">正在產生金鑰對…</string>
@@ -103,7 +103,7 @@
   <string name="button_import">匯入</string>
   <string name="font_importing">正在匯入字型……</string>
   <string name="pref_backupkeys_title">備份公鑰</string>
-  <string name="pref_backupkeys_summary">備份私鑰(使用Andriod備份機制)</string>
+  <string name="pref_backupkeys_summary" tools:machine_translated="true">使用 Android 的備份機制來備份私鑰。</string>
   <string name="pref_ui_category">使用者介面</string>
   <string name="pref_language_title">語言</string>
   <string name="pref_language_system_default">系統預設值</string>
@@ -191,7 +191,7 @@
   <string name="hostpref_clear_password">清除已儲存的密碼</string>
   <string name="hostpref_hostname_title">主機</string>
   <string name="hostpref_port_title">連接埠</string>
-  <string name="hostpref_profile_title">個人資料</string>
+  <string name="hostpref_profile_title" tools:machine_translated="true">設定檔</string>
   <string name="hostpref_profile_summary">選擇一個設定檔以使用其終端機設定</string>
   <string name="hostpref_profile_none">無 (使用主機設定)</string>
   <string name="profile_controlled_setting">由設定檔控制</string>
@@ -200,7 +200,7 @@
   <string name="pubkey_unknown">未知的金鑰</string>
   <string name="colorscheme_default">預設值</string>
   <string name="profile_editor_title_new">新增設定檔</string>
-  <string name="profile_editor_title_edit">編輯個人資料</string>
+  <string name="profile_editor_title_edit" tools:machine_translated="true">編輯設定檔</string>
   <string name="profile_editor_save">儲存</string>
   <string name="profile_editor_name_label">設定檔名稱</string>
   <string name="profile_editor_section_icon_color">圖示顏色</string>
@@ -210,7 +210,7 @@
   <string name="profile_editor_font_family_title">字體家族</string>
   <string name="profile_editor_font_size_title">字體大小：%d</string>
   <string name="profile_editor_force_size_title">強制設定大小</string>
-  <string name="profile_editor_force_size_summary">強制將終端機設定為特定大小（欄數 x 欄數），而不是自動調整以適應螢幕。</string>
+  <string name="profile_editor_force_size_summary" tools:machine_translated="true">強制將終端機設定為特定大小（欄數 x 列數），而不是自動調整以適應螢幕。</string>
   <string name="profile_editor_force_size_enable">啟用強制調整大小</string>
   <string name="profile_editor_force_size_columns">欄位</string>
   <string name="profile_editor_force_size_rows">列</string>
@@ -222,7 +222,7 @@
   <string name="profile_list_duplicate">複製</string>
   <string name="profile_list_delete">刪除</string>
   <string name="profile_create_dialog_title">建立設定檔</string>
-  <string name="profile_create_name_label">個人檔案名稱</string>
+  <string name="profile_create_name_label" tools:machine_translated="true">設定檔名稱</string>
   <string name="profile_create_button">建立</string>
   <string name="profile_create_cancel">取消</string>
   <string name="profile_delete_dialog_title">刪除設定檔</string>
@@ -235,7 +235,7 @@
   <string name="console_menu_close">關閉</string>
   <string name="console_menu_paste">貼上</string>
   <string name="console_menu_portforwards">連接埠轉址</string>
-  <string name="console_menu_resize">字體大小</string>
+  <string name="console_menu_resize" tools:machine_translated="true">強制設定大小</string>
   <string name="console_menu_urlscan">URL 掃描</string>
   <string name="console_url_no_handler">沒有可用的應用程式來開啟此網址</string>
   <string name="console_url_not_supported">此 URL 類型不支援</string>
@@ -435,7 +435,7 @@
   <string name="migration_warning">請勿在資料移轉期間關閉應用程式</string>
   <string name="migration_stats_hosts">已遷移的主機：%d</string>
   <string name="migration_stats_pubkeys">已遷移的 SSH 金鑰：%d</string>
-  <string name="migration_stats_port_forwards">已轉移的端口數：%d</string>
+  <string name="migration_stats_port_forwards" tools:machine_translated="true">已轉移的端口轉發規則：%d</string>
   <string name="migration_stats_known_hosts">已遷移的已知主機：%d</string>
   <string name="migration_failed_title">遷移失敗</string>
   <string name="migration_failed_message">資料庫遷移過程中發生錯誤：%s</string>
@@ -956,10 +956,10 @@
   <string name="keyboard_key_paste" tools:machine_translated="true">貼上</string>
   <string name="keyboard_shortcut_description" tools:machine_translated="true">%1$s（%2$s）</string>
   <string name="keyboard_action_stop_full" tools:machine_translated="true">中斷</string>
-  <string name="keyboard_action_history_full" tools:machine_translated="true">搜尋瀏覽紀錄</string>
+  <string name="keyboard_action_history_full" tools:machine_translated="true">搜尋命令歷程</string>
   <string name="keyboard_action_mode_full" tools:machine_translated="true">切換權限模式</string>
   <string name="keyboard_action_newline_full" tools:machine_translated="true">插入新行</string>
-  <string name="keyboard_action_log_full" tools:machine_translated="true">切換字幕</string>
+  <string name="keyboard_action_log_full" tools:machine_translated="true">顯示或隱藏對話紀錄</string>
   <string name="keyboard_action_edit_full" tools:machine_translated="true">開啟外部編輯器</string>
   <string name="keyboard_action_copy_full" tools:machine_translated="true">複製回覆</string>
   <string name="macro_assign" tools:machine_translated="true">指定巨集</string>
@@ -1019,7 +1019,7 @@
   <string name="keyboard_outline_color" tools:machine_translated="true">輪廓顏色</string>
   <string name="keyboard_color_value" tools:machine_translated="true">%1$s：%2$s</string>
   <string name="keyboard_theme_color" tools:machine_translated="true">預設主題</string>
-  <string name="keyboard_background_opacity" tools:machine_translated="true">背景透明度：%1$d%%</string>
+  <string name="keyboard_background_opacity" tools:machine_translated="true">背景不透明度：%1$d%%</string>
   <string name="keyboard_outlined" tools:machine_translated="true">已繪製外框</string>
   <string name="keyboard_outline_thickness" tools:machine_translated="true">輪廓線粗細：%1$.1f dp</string>
   <string name="keyboard_reset_appearance" tools:machine_translated="true">重設外觀。</string>
@@ -1063,7 +1063,7 @@
   <string name="keyboard_repeat_off" tools:machine_translated="true">按一下</string>
   <string name="keyboard_repeat_on" tools:machine_translated="true">持續按住時會重複執行。</string>
   <string name="keyboard_advanced_summary" tools:machine_translated="true">列、欄和按鍵寬度</string>
-  <string name="keyboard_usage_count" tools:machine_translated="true">由 %1$d 人使用。</string>
+  <string name="keyboard_usage_count" tools:machine_translated="true">使用位置數：%1$d</string>
   <string name="keyboard_remove_key_message" tools:machine_translated="true">從佈局草稿中移除這個按鍵嗎？</string>
   <string name="keyboard_key_discard_title" tools:machine_translated="true">套用按鍵變更？</string>
   <string name="keyboard_key_discard_message" tools:machine_translated="true">將這些變更套用到佈局中，或捨棄這些變更。</string>
@@ -1083,4 +1083,14 @@
   <string name="keyboard_builtin_presets" tools:machine_translated="true">內建範本</string>
   <string name="keyboard_builtin_presets_help" tools:machine_translated="true">內建的預設設定不會變更。編輯時會建立您自己的副本。</string>
   <string name="keyboard_builtin_preset" tools:machine_translated="true">內建預設值</string>
+  <string name="pref_zmodem_title" tools:machine_translated="true">啟用 Z-Modem 檔案傳輸</string>
+  <string name="pref_zmodem_summary" tools:machine_translated="true">偵測透過 SSH 和 Telnet 傳輸的遠端檔案上傳和下載請求。</string>
+  <string name="zmodem_title" tools:machine_translated="true">Z-Modem 檔案傳輸</string>
+  <string name="zmodem_progress" tools:machine_translated="true">%1$s：已傳輸 %2$d 位元組</string>
+  <string name="zmodem_cancel" tools:machine_translated="true">取消傳輸</string>
+  <string name="zmodem_select" tools:machine_translated="true">選擇檔案或下載資料夾。</string>
+  <string name="zmodem_failed" tools:machine_translated="true">檔案傳輸失敗。</string>
+  <string name="zmodem_dismiss" tools:machine_translated="true">關閉</string>
+  <string name="zmodem_progress_total" tools:machine_translated="true">%1$s：%2$d / %3$d 位元組</string>
+  <string name="zmodem_cancelling" tools:machine_translated="true">正在取消傳輸……</string>
 </resources>

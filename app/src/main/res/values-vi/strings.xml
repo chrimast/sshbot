@@ -956,7 +956,7 @@
   <string name="keyboard_key_paste" tools:machine_translated="true">Dán</string>
   <string name="keyboard_shortcut_description" tools:machine_translated="true">%1$s (%2$s)</string>
   <string name="keyboard_action_stop_full" tools:machine_translated="true">Ngắt.</string>
-  <string name="keyboard_action_history_full" tools:machine_translated="true">Lịch sử tìm kiếm</string>
+  <string name="keyboard_action_history_full" tools:machine_translated="true">Tìm trong lịch sử lệnh</string>
   <string name="keyboard_action_mode_full" tools:machine_translated="true">Chuyển đổi giữa các chế độ quyền.</string>
   <string name="keyboard_action_newline_full" tools:machine_translated="true">Chèn dòng mới</string>
   <string name="keyboard_action_log_full" tools:machine_translated="true">Bật/tắt bản ghi</string>
@@ -1019,7 +1019,7 @@
   <string name="keyboard_outline_color" tools:machine_translated="true">Màu viền.</string>
   <string name="keyboard_color_value" tools:machine_translated="true">%1$s: %2$s</string>
   <string name="keyboard_theme_color" tools:machine_translated="true">Giao diện mặc định</string>
-  <string name="keyboard_background_opacity" tools:machine_translated="true">Độ trong suốt của nền: %1$d%%</string>
+  <string name="keyboard_background_opacity" tools:machine_translated="true">Độ đục của nền: %1$d%%</string>
   <string name="keyboard_outlined" tools:machine_translated="true">Đã viền đường bao</string>
   <string name="keyboard_outline_thickness" tools:machine_translated="true">Độ dày đường viền: %1$.1f dp</string>
   <string name="keyboard_reset_appearance" tools:machine_translated="true">Khôi phục giao diện.</string>
@@ -1063,7 +1063,7 @@
   <string name="keyboard_repeat_off" tools:machine_translated="true">Nhấn một lần.</string>
   <string name="keyboard_repeat_on" tools:machine_translated="true">Lặp lại khi nhấn và giữ.</string>
   <string name="keyboard_advanced_summary" tools:machine_translated="true">Hàng, cột và độ rộng của phím</string>
-  <string name="keyboard_usage_count" tools:machine_translated="true">Đã được %1$d người sử dụng.</string>
+  <string name="keyboard_usage_count" tools:machine_translated="true">Số nơi sử dụng: %1$d</string>
   <string name="keyboard_remove_key_message" tools:machine_translated="true">Xóa phím này khỏi bản nháp bố cục bàn phím?</string>
   <string name="keyboard_key_discard_title" tools:machine_translated="true">Áp dụng các thay đổi cho phím?</string>
   <string name="keyboard_key_discard_message" tools:machine_translated="true">Áp dụng những thay đổi này vào bố cục hoặc hủy bỏ chúng.</string>
@@ -1083,4 +1083,14 @@
   <string name="keyboard_builtin_presets" tools:machine_translated="true">Các mẫu có sẵn.</string>
   <string name="keyboard_builtin_presets_help" tools:machine_translated="true">Các cài đặt sẵn có mặc định sẽ không thay đổi. Việc chỉnh sửa sẽ tạo ra một bản sao riêng của bạn.</string>
   <string name="keyboard_builtin_preset" tools:machine_translated="true">Cài đặt sẵn.</string>
+  <string name="pref_zmodem_title" tools:machine_translated="true">Kích hoạt chức năng truyền tệp bằng giao thức Z-Modem.</string>
+  <string name="pref_zmodem_summary" tools:machine_translated="true">Phát hiện các yêu cầu tải lên và tải xuống tệp từ xa qua SSH và Telnet.</string>
+  <string name="zmodem_title" tools:machine_translated="true">Truyền tệp bằng giao thức Z-Modem</string>
+  <string name="zmodem_progress" tools:machine_translated="true">%1$s: %2$d byte</string>
+  <string name="zmodem_cancel" tools:machine_translated="true">Hủy bỏ quá trình truyền tải.</string>
+  <string name="zmodem_select" tools:machine_translated="true">Chọn tệp hoặc thư mục tải xuống.</string>
+  <string name="zmodem_failed" tools:machine_translated="true">Quá trình truyền tệp đã không thành công.</string>
+  <string name="zmodem_dismiss" tools:machine_translated="true">Đóng.</string>
+  <string name="zmodem_progress_total" tools:machine_translated="true">%1$s: %2$d / %3$d byte</string>
+  <string name="zmodem_cancelling" tools:machine_translated="true">Đang hủy quá trình truyền dữ liệu…</string>
 </resources>

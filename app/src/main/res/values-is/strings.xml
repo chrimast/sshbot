@@ -956,7 +956,7 @@
   <string name="keyboard_key_paste" tools:machine_translated="true">Límdu</string>
   <string name="keyboard_shortcut_description" tools:machine_translated="true">%1$s (%2$s)</string>
   <string name="keyboard_action_stop_full" tools:machine_translated="true">Röf</string>
-  <string name="keyboard_action_history_full" tools:machine_translated="true">Leita í síðustu leitarförum</string>
+  <string name="keyboard_action_history_full" tools:machine_translated="true">Leita í skipanasögu</string>
   <string name="keyboard_action_mode_full" tools:machine_translated="true">Skipta á milli stillinga fyrir leyfi</string>
   <string name="keyboard_action_newline_full" tools:machine_translated="true">Setja inn línubrot</string>
   <string name="keyboard_action_log_full" tools:machine_translated="true">Ræsa/slökkva á texta</string>
@@ -1019,7 +1019,7 @@
   <string name="keyboard_outline_color" tools:machine_translated="true">Litur á útlínuna</string>
   <string name="keyboard_color_value" tools:machine_translated="true">%1$s: %2$s</string>
   <string name="keyboard_theme_color" tools:machine_translated="true">Sjálfgefið útlit</string>
-  <string name="keyboard_background_opacity" tools:machine_translated="true">Opaleika bakgrunnar: %1$d%%</string>
+  <string name="keyboard_background_opacity" tools:machine_translated="true">Ógegnsæi bakgrunns: %1$d%%</string>
   <string name="keyboard_outlined" tools:machine_translated="true">Með útlínur</string>
   <string name="keyboard_outline_thickness" tools:machine_translated="true">Breidd útlínunnar: %1$.1f dp</string>
   <string name="keyboard_reset_appearance" tools:machine_translated="true">Endurstilltu útlit</string>
@@ -1083,4 +1083,14 @@
   <string name="keyboard_builtin_presets" tools:machine_translated="true">Forstillingar sem eru fyrirfram stilltar.</string>
   <string name="keyboard_builtin_presets_help" tools:machine_translated="true">Forstillingar sem eru fyrirfram stilltar í kerfinu breytast ekki. Með því að breyta forstillingunni býrðu til þína eigin afrit.</string>
   <string name="keyboard_builtin_preset" tools:machine_translated="true">Forstillt snið</string>
+  <string name="pref_zmodem_title" tools:machine_translated="true">Virkaðu Z-Modem skráarsendingar.</string>
+  <string name="pref_zmodem_summary" tools:machine_translated="true">Finna fyrirspurnir um að hlaða upp og niður skrám yfir SSH og Telnet.</string>
+  <string name="zmodem_title" tools:machine_translated="true">Z-Modem skráarsending</string>
+  <string name="zmodem_progress" tools:machine_translated="true">%1$s: %2$d bæti</string>
+  <string name="zmodem_cancel" tools:machine_translated="true">Hættu við sendingu</string>
+  <string name="zmodem_select" tools:machine_translated="true">Veldu skrá(r) eða möppu til að hlaða niður í.</string>
+  <string name="zmodem_failed" tools:machine_translated="true">Skráarsendingin mistókst.</string>
+  <string name="zmodem_dismiss" tools:machine_translated="true">Loka</string>
+  <string name="zmodem_progress_total" tools:machine_translated="true">%1$s: %2$d / %3$d bæti</string>
+  <string name="zmodem_cancelling" tools:machine_translated="true">Hætt við sendingu…</string>
 </resources>
