@@ -1,85 +1,15 @@
-import org.gradle.api.DefaultTask
-import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.provider.Property
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.TaskAction
+import org.connectbot.buildlogic.AndroidVersions
+import org.connectbot.buildlogic.MoshArtifactsExtension
+import org.connectbot.buildlogic.PrepareMoshArtifacts
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.net.URI
 import java.util.UUID
-import java.util.zip.ZipInputStream
 
-abstract class PrepareOssMoshArtifacts : DefaultTask() {
-    @get:Input abstract val releaseTag: Property<String>
-
-    @get:OutputDirectory abstract val jniLibsDirectory: DirectoryProperty
-
-    @get:OutputDirectory abstract val assetsDirectory: DirectoryProperty
-
-    @TaskAction
-    fun prepare() {
-        val tag = releaseTag.get()
-        val jniLibsRoot = jniLibsDirectory.get().asFile
-        val assetsRoot = assetsDirectory.get().asFile
-        jniLibsRoot.deleteRecursively()
-        assetsRoot.deleteRecursively()
-        val abis = listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
-        abis.forEach { abi ->
-            val url = URI("https://github.com/connectbot/mosh4android/releases/download/$tag/mosh-android-$abi.zip").toURL()
-            val connection = url.openConnection().apply {
-                connectTimeout = 15_000
-                readTimeout = 60_000
-            }
-            var foundClient = false
-            var foundTerminfo = false
-            ZipInputStream(connection.getInputStream().buffered()).use { archive ->
-                var entry = archive.nextEntry
-                while (entry != null) {
-                    when (entry.name) {
-                        "mosh-client" -> {
-                            val target = jniLibsRoot.resolve("$abi/libmoshexec.so")
-                            target.parentFile.mkdirs()
-                            target.outputStream().use { archive.copyTo(it) }
-                            foundClient = true
-                        }
-
-                        "terminfo.zip" -> {
-                            if (abi == abis.first()) {
-                                val nonClosing = object : java.io.FilterInputStream(archive) {
-                                    override fun close() {}
-                                }
-                                ZipInputStream(nonClosing).use { nested ->
-                                    var nestedEntry = nested.nextEntry
-                                    while (nestedEntry != null) {
-                                        if (nestedEntry.name == "share/terminfo/x/xterm-256color") {
-                                            val target = assetsRoot.resolve("share/terminfo/x/xterm-256color")
-                                            target.parentFile.mkdirs()
-                                            target.outputStream().use { nested.copyTo(it) }
-                                            foundTerminfo = true
-                                        }
-                                        nested.closeEntry()
-                                        nestedEntry = nested.nextEntry
-                                    }
-                                }
-                            } else {
-                                foundTerminfo = true
-                            }
-                        }
-                    }
-                    archive.closeEntry()
-                    entry = archive.nextEntry
-                }
-            }
-            check(foundClient && foundTerminfo) { "Missing mosh-client or terminfo in $abi release archive" }
-        }
-        assetsRoot.resolve("mosh-release.txt").writeText(tag)
-    }
-}
 
 plugins {
+    id("org.connectbot.mosh-artifacts")
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
@@ -91,43 +21,8 @@ plugins {
     alias(libs.plugins.sonarqube)
 }
 
-val moshReleaseTag = rootProject.file("gradle/mosh4android.version")
-    .readLines().first { it.isNotBlank() && !it.startsWith("#") }.trim()
-
-val generatedOssMosh = layout.buildDirectory.dir("generated/mosh/oss")
-val prepareOssMoshArtifacts = tasks.register<PrepareOssMoshArtifacts>("prepareOssMoshArtifacts") {
-    releaseTag.set(moshReleaseTag)
-    jniLibsDirectory.set(generatedOssMosh.map { it.dir("jniLibs") })
-    assetsDirectory.set(generatedOssMosh.map { it.dir("assets") })
-}
-
-// Stable patch slots occupy the lower half of each minor version's range.
-// The upper half is reserved for the following minor version's alpha builds.
-object AndroidVersions {
-    fun code(tag: String, commits: Int): Int {
-        val match = Regex("""v([0-9]+)\.([0-9]+)\.([0-9]+)(-alpha)?""").matchEntire(tag)
-        requireNotNull(match) { "Unsupported version anchor: $tag" }
-        val (majorText, minorText, patchText, prerelease) = match.destructured
-        val major = majorText.toInt()
-        val minor = minorText.toInt()
-        val patch = patchText.toInt()
-        require(major in 0..209 && minor in 0..99 && patch in 0..49) {
-            "Version components exceed allocated ranges: $tag (patch must be <= 49)"
-        }
-        val alpha = prerelease.isNotEmpty()
-        if (alpha) {
-            require(patch == 0 && minor > 0) { "Alpha anchors require a new minor version: $tag" }
-        }
-        val capacity = if (alpha) 50_000 else 1_000
-        require(commits in 0 until capacity) {
-            "Version range exhausted for $tag: $commits commits (limit $capacity); create the next stable release"
-        }
-        val base = major * 10_000_000L + minor * 100_000L + patch * 1_000L
-        val code = base - (if (alpha) 50_000 else 0) + commits
-        require(code in 1..2_100_000_000L) { "Android version code out of range: $code" }
-        return code.toInt()
-    }
-}
+val moshReleaseTag = extensions.getByType<MoshArtifactsExtension>().releaseTag.get()
+val prepareOssMoshArtifacts = tasks.named<PrepareMoshArtifacts>("prepareOssMoshArtifacts")
 
 appVersioning {
     tagFilter.set("v1.12.*")
@@ -533,6 +428,8 @@ kotlin {
 }
 
 tasks.withType<Test>().configureEach {
+    // Use Maven Central's canonical endpoint for Robolectric runtime downloads.
+    systemProperty("robolectric.dependency.repo.url", "https://repo.maven.apache.org/maven2")
     jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
     // Robolectric's cached Android resources use a heap separate from the Gradle daemon.
     maxHeapSize = "2g"
@@ -613,6 +510,28 @@ tasks
         dependsOn(generateExportSchema)
     }
 
+// Keep KSP's generated Hilt test application on javac's source path even when
+// the generated directory does not exist yet in a clean build.
+tasks.withType<JavaCompile>().matching {
+    it.name.startsWith("compile") && it.name.endsWith("UnitTestJavaWithJavac")
+}.configureEach {
+    val componentName = name.removePrefix("compile").removeSuffix("JavaWithJavac")
+    val componentDirectory = componentName.replaceFirstChar { it.lowercaseChar() }
+    val generatedJava = layout.buildDirectory.dir("generated/ksp/$componentDirectory/java")
+    source(files(generatedJava).builtBy("ksp${componentName}Kotlin"))
+}
+
+// Lint analyzes Hilt-generated test sources, but AGP does not automatically make its
+// test-analysis tasks depend on the corresponding KSP tasks.
+tasks
+    .matching {
+        it.name.startsWith("lintAnalyze") &&
+            (it.name.endsWith("UnitTest") || it.name.endsWith("AndroidTest"))
+    }.configureEach {
+        val componentName = name.removePrefix("lintAnalyze")
+        dependsOn("ksp${componentName}Kotlin")
+    }
+
 dependencies {
     implementation(libs.zmodemlib)
     coreLibraryDesugaring(libs.desugar)
@@ -675,6 +594,10 @@ dependencies {
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.core)
     implementation(libs.androidx.work.runtime)
+
+    // FIDO2/CTAP2 support via YubiKit
+    implementation(libs.yubikit.android)
+    implementation(libs.yubikit.fido)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)

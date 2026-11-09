@@ -77,6 +77,7 @@ import org.connectbot.data.sync.SyncBaselineDao
  *   Includes fit-to-width sizing, preset template keys, five keyboard layers, shared automation macros,
  *   and per-button colors, background opacity, outlines, hold repeat, haptic feedback, and a fixed trailing-edge pinned region.
  * - Version 18: Added base font weight to profiles, defaulting to normal (AutoMigration)
+ * - Version 19: Added FIDO2 credential fields to pubkeys (AutoMigration)
  * - Future versions: Use Room AutoMigration when possible for simple schema changes
  *
  * Security Considerations:
@@ -112,6 +113,7 @@ import org.connectbot.data.sync.SyncBaselineDao
         AutoMigration(from = 15, to = 16, spec = CryptoPolicyMigration::class),
         AutoMigration(from = 16, to = 17, spec = ConnectBotDatabase.KeyboardMigration::class),
         AutoMigration(from = 17, to = 18, spec = ConnectBotDatabase.FontWeightMigration::class),
+        AutoMigration(from = 18, to = 19),
     ],
 )
 @TypeConverters(Converters::class)

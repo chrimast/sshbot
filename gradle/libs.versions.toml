@@ -1,4 +1,5 @@
 [versions]
+gradleDownload = "5.7.0"
 json5 = "3.0.0"
 desugar = "2.1.5"
 androidGradlePlugin = "9.4.1"
@@ -66,6 +67,7 @@ coil = "3.1.0"
 work = "2.11.1"
 
 [libraries]
+gradle-download = { module = "de.undercouch:gradle-download-task", version.ref = "gradleDownload" }
 zmodemlib = { module = "org.connectbot.zmodemlib:zmodemlib", version.ref = "zmodemlib" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 desugar = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar" }
@@ -131,6 +133,9 @@ androidx-biometric = { module = "androidx.biometric:biometric-ktx", version.ref 
 androidx-core = { module = "androidx.core:core-ktx", version.ref = "core" }
 androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
 androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "work" }
+
+yubikit-android = { module = "com.yubico.yubikit:android", version.ref = "yubikit" }
+yubikit-fido = { module = "com.yubico.yubikit:fido", version.ref = "yubikit" }
 
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }

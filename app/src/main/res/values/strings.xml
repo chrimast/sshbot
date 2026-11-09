@@ -856,6 +856,8 @@
 	<string name="terminal_auth_biometric">"Requesting biometric authentication for key '%1$s'"</string>
 	<!-- Message shown when a biometric key has been invalidated due to new fingerprint enrollment. Parameter is the key nickname. -->
 	<string name="terminal_auth_biometric_invalidated">"Biometric key '%1$s' has been invalidated. This can happen when new fingerprints are enrolled on the device. Please generate a new key."</string>
+	<!-- Message shown in terminal when requesting FIDO2 security key authentication. Parameter is the key nickname. -->
+	<string name="terminal_auth_fido2">"Requesting FIDO2 security key authentication for key '%1$s'"</string>
 	<!-- Message shown in terminal when public key authentication fails. Parameter is the key nickname. -->
 	<string name="terminal_auth_pubkey_fail">"Authentication method 'publickey' with key '%1$s' failed"</string>
 
@@ -1240,6 +1242,8 @@
 	<string name="pubkey_encrypted_description">Encrypted</string>
 	<!-- Accessibility description for unencrypted key icon -->
 	<string name="pubkey_not_encrypted_description">Not encrypted</string>
+	<!-- Accessibility description for FIDO2 key icon -->
+	<string name="pubkey_fido2_description">FIDO2 hardware key</string>
 
 	<!-- Biometric authentication strings -->
 	<!-- Label for biometric protection toggle in key generation -->
