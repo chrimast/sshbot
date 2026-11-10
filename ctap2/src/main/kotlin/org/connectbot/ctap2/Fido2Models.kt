@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.connectbot.fido2
+package org.connectbot.ctap2
 
 /**
  * FIDO2 algorithm identifiers as defined in COSE (RFC 8152).
@@ -127,28 +127,6 @@ data class Fido2SignatureResult(
         result = 31 * result + counter
         return result
     }
-}
-
-/**
- * Connection state of FIDO2 security key.
- */
-sealed class Fido2ConnectionState {
-    /** No security key is connected */
-    data object Disconnected : Fido2ConnectionState()
-
-    /** Attempting to connect to a security key */
-    data object Connecting : Fido2ConnectionState()
-
-    /** Security key is connected and ready */
-    data class Connected(
-        /** Transport type: "USB" or "NFC" */
-        val transport: String,
-        /** Device name if available */
-        val deviceName: String? = null,
-    ) : Fido2ConnectionState()
-
-    /** An error occurred during connection or operation */
-    data class Error(val message: String) : Fido2ConnectionState()
 }
 
 /**

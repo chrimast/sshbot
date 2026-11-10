@@ -15,23 +15,17 @@
  * limitations under the License.
  */
 
-package org.connectbot.fido2
+package org.connectbot.ctap2
 
 import com.yubico.yubikit.fido.ctap.CredentialManagement
 
 internal object Fido2CredentialMapper {
-    private const val SSH_RP_ID = "ssh:"
     private const val COSE_ALGORITHM_KEY = 3
     private const val ERR_MISSING_CREDENTIAL_ID = "Missing credential ID"
 
-    fun isSshRp(rpData: CredentialManagement.RpData): Boolean {
-        val rpId = rpData.rp["id"] as? String
-        return rpId == SSH_RP_ID || rpId?.startsWith(SSH_RP_ID) == true
-    }
-
     fun fromCredentialData(
         credData: CredentialManagement.CredentialData,
-        sshRp: CredentialManagement.RpData,
+        rpData: CredentialManagement.RpData,
     ): Fido2Credential {
         val user = credData.user
         val credentialId = credData.credentialId["id"] as? ByteArray
@@ -48,7 +42,7 @@ internal object Fido2CredentialMapper {
 
         return Fido2Credential(
             credentialId = credentialId,
-            rpId = sshRp.rp["id"] as? String ?: SSH_RP_ID,
+            rpId = rpData.rp["id"] as? String ?: error("Missing relying party ID"),
             userHandle = user["id"] as? ByteArray,
             userName = user["name"] as? String,
             publicKeyBytes = extractPublicKey(publicKey, algorithm),

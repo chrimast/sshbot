@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.connectbot.fido2
+package org.connectbot.ctap2
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test

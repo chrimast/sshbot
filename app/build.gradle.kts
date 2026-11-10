@@ -595,9 +595,10 @@ dependencies {
     implementation(libs.androidx.core)
     implementation(libs.androidx.work.runtime)
 
-    // FIDO2/CTAP2 support via YubiKit
-    implementation(libs.yubikit.android)
-    implementation(libs.yubikit.fido)
+    implementation(project(":ctap2-android"))
+    implementation(project(":ctap2"))
+    kover(project(":ctap2"))
+    kover(project(":ctap2-android"))
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
@@ -621,6 +622,11 @@ dependencies {
     testImplementation(libs.asm)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(libs.yubikit.android)
+    testImplementation(libs.yubikit.fido) {
+        // YubiKit 3.0.0 declares Moshi but does not reference it; Okio is transitive.
+        exclude(group = "com.squareup.moshi", module = "moshi")
+    }
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.kotlin)
     testImplementation(libs.assertj.core)

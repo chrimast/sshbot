@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.connectbot.fido2
+package org.connectbot.ctap2
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -156,24 +156,6 @@ class Fido2ModelsTest {
 
         assertThat(result1).isEqualTo(result2)
         assertThat(result1.hashCode()).isEqualTo(result2.hashCode())
-    }
-
-    @Test
-    fun `Fido2ConnectionState Connected contains transport info`() {
-        val state = Fido2ConnectionState.Connected(
-            transport = "USB",
-            deviceName = "YubiKey 5",
-        )
-
-        assertThat(state.transport).isEqualTo("USB")
-        assertThat(state.deviceName).isEqualTo("YubiKey 5")
-    }
-
-    @Test
-    fun `Fido2ConnectionState Error contains message`() {
-        val state = Fido2ConnectionState.Error("Connection failed")
-
-        assertThat(state.message).isEqualTo("Connection failed")
     }
 
     @Test

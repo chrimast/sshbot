@@ -1,6 +1,6 @@
 /*
  * ConnectBot: simple, powerful, open-source SSH client for Android
- * Copyright 2025-2026 Kenny Root
+ * Copyright 2026 Kenny Root
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,9 @@
  * limitations under the License.
  */
 
-package org.connectbot.fido2
+package org.connectbot.ctap2
 
-import java.text.Normalizer
-
-/**
- * Normalizes a FIDO2 PIN to Unicode NFC form as required by the CTAP2 spec.
- *
- * The FIDO2 specification requires PINs to be normalized to Unicode NFC form
- * before being sent to the authenticator. This ensures that equivalent Unicode
- * representations (e.g., é as U+00E9 vs e + U+0301) are treated as the same PIN.
- */
-fun normalizePin(pin: String): CharArray = Normalizer.normalize(pin, Normalizer.Form.NFC).toCharArray()
+/** Classifies connection failures using the same PIN handling as session operations. */
+object Ctap2Errors {
+    fun <T> fromException(error: Exception, message: String): Fido2Result<T> = Ctap2Operations().mapSigningError(error, message)
+}

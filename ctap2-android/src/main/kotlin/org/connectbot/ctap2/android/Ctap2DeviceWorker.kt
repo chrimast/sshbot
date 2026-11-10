@@ -1,6 +1,6 @@
 /*
  * ConnectBot: simple, powerful, open-source SSH client for Android
- * Copyright 2025-2026 Kenny Root
+ * Copyright 2026 Kenny Root
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,21 @@
  * limitations under the License.
  */
 
-package org.connectbot.fido2
+package org.connectbot.ctap2.android
 
-import com.yubico.yubikit.fido.ctap.Ctap2Session
-import com.yubico.yubikit.fido.webauthn.AuthenticatorData
-import java.nio.ByteBuffer
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
-internal object Fido2SignatureMapper {
-    fun fromAssertion(assertion: Ctap2Session.AssertionData): Fido2SignatureResult {
-        val authData = assertion.authenticatorData
-        val parsed = AuthenticatorData.parseFrom(ByteBuffer.wrap(authData))
+/** Keeps an SDK operation exclusive until its connection callback has finished. */
+class Ctap2DeviceWorker(private val ioDispatcher: CoroutineDispatcher) {
+    private val mutex = Mutex()
 
-        return Fido2SignatureResult(
-            authenticatorData = authData,
-            signature = assertion.signature,
-            counter = parsed.signCount,
-        )
+    suspend fun <T> execute(operation: suspend () -> T): T = withContext(ioDispatcher) {
+        mutex.withLock {
+            withContext(NonCancellable) { operation() }
+        }
     }
 }
