@@ -7,7 +7,7 @@ androidGradlePlugin = "9.4.1"
 kotlin = "2.4.21"
 spotless = "8.11.0"
 easylauncher = "6.4.1"
-pythonUv = "0.4.34"
+pythonUv = "0.4.35"
 appVersioning = "1.6.0"
 room = "2.8.5"
 asm = "9.11.1"
@@ -29,8 +29,11 @@ activityCompose = "1.13.0"
 
 zmodemlib = "0.1.1"
 telnetlib = "0.1.1"
-sshlib = "0.6.7"
+sshlib = "0.6.8"
 termlib = "0.3.14"
+
+yubikit = "3.3.0"
+
 playServicesBasement = "18.12.0"
 playFeatureDelivery = "2.1.0"
 conscrypt = "2.9.0"
@@ -60,7 +63,7 @@ jacoco = "0.8.14"
 
 media3CommonKtx = "1.11.1"
 navigationTesting = "2.10.2"
-ui = "1.11.4"
+ui = "1.12.1"
 biometric = "1.4.0-alpha02"
 core = "1.19.0"
 coil = "3.1.0"
@@ -138,6 +141,7 @@ androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "
 yubikit-android = { module = "com.yubico.yubikit:android", version.ref = "yubikit" }
 yubikit-core = { module = "com.yubico.yubikit:core", version.ref = "yubikit" }
 yubikit-fido = { module = "com.yubico.yubikit:fido", version.ref = "yubikit" }
+yubikit-piv = { module = "com.yubico.yubikit:piv", version.ref = "yubikit" }
 
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }

@@ -105,10 +105,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import org.connectbot.R
 import org.connectbot.data.entity.Pubkey
+import org.connectbot.piv.YubiKeyPiv
 import org.connectbot.ui.LocalTerminalManager
 import org.connectbot.ui.PreviewScreen
 import org.connectbot.ui.components.FocusableAlertDialog
 import org.connectbot.ui.components.TextInputAlertDialog
+import org.connectbot.ui.components.YubiKeyPivDialog
 import org.connectbot.ui.components.rememberBiometricPromptState
 import org.connectbot.ui.theme.ConnectBotTheme
 import org.connectbot.ui.common.InputFieldShape
@@ -244,7 +246,19 @@ fun PubkeyListScreen(
         )
     }
 
-    // Nickname confirmation dialog for unencrypted file imports
+    var showYubiKeyImportDialog by remember { mutableStateOf(false) }
+    if (showYubiKeyImportDialog) {
+        YubiKeyPivDialog(
+            onDismiss = { showYubiKeyImportDialog = false },
+            onComplete = { slot, publicKey ->
+                showYubiKeyImportDialog = false
+                viewModel.registerYubiKey(slot, publicKey)
+            },
+            operation = { activity, slot, _ -> YubiKeyPiv.readPublicKey(activity, slot) },
+        )
+    }
+
+    // Nickname confirmation dialog for unencrypted imports
     val pendingNicknameConfirmation = uiState.pendingNicknameConfirmation
     if (pendingNicknameConfirmation != null) {
         NicknameConfirmationDialog(
@@ -302,6 +316,7 @@ fun PubkeyListScreen(
             filePickerLauncher.launch(arrayOf("*/*"))
         },
         onImportKeyFromClipboard = { showClipboardImportDialog = true },
+        onImportYubiKey = { showYubiKeyImportDialog = true },
         modifier = modifier,
     )
 }
@@ -328,6 +343,7 @@ fun PubkeyListScreenContent(
     onImportKey: () -> Unit,
     onImportKeyFromClipboard: () -> Unit,
     modifier: Modifier = Modifier,
+    onImportYubiKey: (() -> Unit)? = null,
 ) {
     var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
 
@@ -398,6 +414,16 @@ fun PubkeyListScreenContent(
                     icon = { Icon(Icons.Default.Key, contentDescription = null) },
                     text = { Text(stringResource(R.string.pubkey_import_fido2)) },
                 )
+                if (onImportYubiKey != null) {
+                    FloatingActionButtonMenuItem(
+                        onClick = {
+                            fabMenuExpanded = false
+                            onImportYubiKey()
+                        },
+                        icon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
+                        text = { Text(stringResource(R.string.pubkey_piv_add)) },
+                    )
+                }
             }
         },
         snackbarHost = {
@@ -435,12 +461,12 @@ fun PubkeyListScreenContent(
                         ),
                     ) {
                         items(
-                            items = uiState.pubkeys,
-                            key = { it.id },
-                        ) { pubkey ->
+                            items = uiState.items,
+                            key = { it.pubkey.id },
+                        ) { item ->
+                            val pubkey = item.pubkey
                             PubkeyListItem(
-                                pubkey = pubkey,
-                                isLoaded = uiState.loadedKeyNicknames.contains(pubkey.nickname),
+                                item = item,
                                 onDelete = { onDeletePubkey(pubkey) },
                                 onToggleLoad = { onToggleKeyLoad(pubkey, it) },
                                 onCopyPublicKey = { onCopyPublicKey(pubkey) },
@@ -476,8 +502,7 @@ fun PubkeyListScreenContent(
 
 @Composable
 private fun PubkeyListItem(
-    pubkey: Pubkey,
-    isLoaded: Boolean,
+    item: PubkeyListItemUiState,
     onDelete: () -> Unit,
     onToggleLoad: ((Pubkey, (String) -> Unit) -> Unit) -> Unit,
     onCopyPublicKey: () -> Unit,
@@ -492,6 +517,8 @@ private fun PubkeyListItem(
     onClick: ((Pubkey, (String) -> Unit) -> Unit) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val pubkey = item.pubkey
+    val isLoaded = item.isLoaded
     var showMenu by remember { mutableStateOf(false) }
     var showPasswordDialog by remember { mutableStateOf(false) }
     var showExportPassphraseDialog by remember { mutableStateOf(false) }
@@ -641,7 +668,7 @@ private fun PubkeyListItem(
                                 leadingIcon = {
                                     Icon(Icons.Default.ContentCopy, null)
                                 },
-                                enabled = !pubkey.isBiometric && !pubkey.isFido2,
+                                enabled = item.canExportPrivateKey,
                             )
 
                             // Copy private key in PEM format (for non-imported keys)
@@ -709,7 +736,7 @@ private fun PubkeyListItem(
                                 leadingIcon = {
                                     Icon(Icons.Default.FileDownload, null)
                                 },
-                                enabled = !pubkey.isBiometric && !pubkey.isFido2,
+                                enabled = item.canExportPrivateKey,
                             )
 
                             // Export private key to file in PEM format (for non-imported keys)

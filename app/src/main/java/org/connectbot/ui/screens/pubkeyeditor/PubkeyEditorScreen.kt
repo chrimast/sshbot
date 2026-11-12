@@ -198,15 +198,30 @@ fun PubkeyEditorScreenContent(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Change Password Section
-                    Text(
-                        text = stringResource(R.string.pubkey_change_password),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
+                    if (uiState.isPiv) return@Column
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    if (uiState.canChangePassword) {
+                        // Change Password Section
+                        Text(
+                            text = stringResource(R.string.pubkey_change_password),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
 
-                    if (uiState.isEncrypted) {
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        if (uiState.isEncrypted) {
+                            OutlinedTextField(
+                                value = uiState.oldPassword,
+                                onValueChange = onOldPasswordChange,
+                                label = { Text(stringResource(R.string.prompt_old_password)) },
+                                visualTransformation = PasswordVisualTransformation(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+
                         OutlinedTextField(
                             shape = InputFieldShape,
                             value = uiState.oldPassword,
@@ -217,8 +232,8 @@ fun PubkeyEditorScreenContent(
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                         )
+
                         Spacer(modifier = Modifier.height(8.dp))
-                    }
 
                     OutlinedTextField(
                         shape = InputFieldShape,
@@ -240,39 +255,24 @@ fun PubkeyEditorScreenContent(
                         onValueChange = onNewPassword2Change,
                         label = {
                             Text(
-                                "${stringResource(R.string.prompt_password)} ${
-                                    stringResource(
-                                        R.string.prompt_again,
-                                    )
-                                }",
+                                text = stringResource(R.string.alert_passwords_do_not_match_msg),
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(start = 16.dp, top = 4.dp),
                             )
-                        },
-                        visualTransformation = PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        isError = uiState.passwordMismatch,
-                    )
+                        }
 
-                    if (uiState.passwordMismatch) {
-                        Text(
-                            text = stringResource(R.string.alert_passwords_do_not_match_msg),
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(start = 16.dp, top = 4.dp),
-                        )
+                        if (uiState.wrongPassword) {
+                            Text(
+                                text = stringResource(R.string.alert_wrong_password_msg),
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(start = 16.dp, top = 4.dp),
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
                     }
-
-                    if (uiState.wrongPassword) {
-                        Text(
-                            text = stringResource(R.string.alert_wrong_password_msg),
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(start = 16.dp, top = 4.dp),
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
 
                     // Options
                     Text(
