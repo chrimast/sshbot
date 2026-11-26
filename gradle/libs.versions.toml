@@ -16,7 +16,7 @@ hilt = "2.60.1"
 hiltNavigationCompose = "1.4.0"
 sonarqube = "7.6.0.18749"
 
-compileSdk = "37"
+compileSdk = "37.1"
 minSdk = "24"
 targetSdk = "36"
 
@@ -63,7 +63,7 @@ jacoco = "0.8.14"
 
 media3CommonKtx = "1.11.1"
 navigationTesting = "2.10.2"
-ui = "1.12.1"
+ui = "1.13.0"
 biometric = "1.4.0-alpha02"
 core = "1.19.0"
 coil = "3.1.0"
