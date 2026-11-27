@@ -320,7 +320,7 @@
   <string name="error_invalid_json">无效的 JSON 文件</string>
   <string name="title_palette_editor">编辑颜色调板</string>
   <string name="button_reset_all_colors">重置所有设置</string>
-  <string name="section_ansi_colors">ANSI 颜色（0-15）</string>
+  <string name="section_ansi_colors">ANSI 颜色（0–15）</string>
   <string name="dialog_title_edit_color">编辑颜色 %1$d</string>
   <string name="dialog_title_reset_all">重置所有颜色？</string>
   <string name="dialog_message_reset_all">这将把所有 256 种颜色重置为其默认值。此操作无法撤销。</string>

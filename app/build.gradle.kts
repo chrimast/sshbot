@@ -103,8 +103,6 @@ android {
         // that the app's state is completely cleared between tests.
         testInstrumentationRunnerArguments["clearPackageData"] = "true"
         testInstrumentationRunnerArguments["useTestStorageService"] = "true"
-
-        multiDexEnabled = true
     }
 
     androidResources {
@@ -414,10 +412,25 @@ kotlin {
     }
 }
 
+// Resolve each SDK separately so Gradle retains every required version of android-all-instrumented.
+val robolectricSdks = libs.bundles.robolectric.sdks.get().map { sdk ->
+    configurations.detachedConfiguration(dependencies.create(sdk)).apply {
+        isTransitive = false
+    }
+}
+val robolectricSdkDirectory = layout.buildDirectory.dir("robolectric-sdks")
+val stageRobolectricSdks = tasks.register<Sync>("stageRobolectricSdks") {
+    from(robolectricSdks)
+    into(robolectricSdkDirectory)
+}
+
 tasks.withType<Test>().configureEach {
-    // Use Maven Central's canonical endpoint for Robolectric runtime downloads.
-    systemProperty("robolectric.dependency.repo.url", "https://repo.maven.apache.org/maven2")
-    jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
+    dependsOn(stageRobolectricSdks)
+    inputs.dir(robolectricSdkDirectory).withPropertyName("robolectricSdks").withPathSensitivity(PathSensitivity.RELATIVE)
+    // Load the SDKs staged from Gradle's dependency cache.
+    systemProperty("robolectric.dependency.dir", robolectricSdkDirectory.get().asFile.absolutePath)
+    // Mockito's inline mock maker appends to the bootstrap classpath.
+    jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED", "-Xshare:off")
     // Robolectric's cached Android resources use a heap separate from the Gradle daemon.
     maxHeapSize = "2g"
     maxParallelForks = 1
@@ -425,7 +438,7 @@ tasks.withType<Test>().configureEach {
 
 // Generate filtered export schema from Room schema
 // Includes keyboard configuration and host/profile tables in the export schema
-val generateExportSchema by tasks.registering {
+val generateExportSchema = tasks.register("generateExportSchema") {
     val exportTables = setOf("profiles", "hosts", "port_forwards", "automation_actions", "keyboard_layouts", "keyboard_macros", "keyboard_items")
     val excludedFields = setOf("last_connect", "host_key_algo")
 
@@ -611,6 +624,7 @@ dependencies {
     testImplementation(libs.asm)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(libs.androidx.test.runner)
     testImplementation(libs.yubikit.android)
     testImplementation(libs.yubikit.fido) {
         // YubiKit 3.0.0 declares Moshi but does not reference it; Okio is transitive.
@@ -618,6 +632,8 @@ dependencies {
     }
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.kotlin)
+    // Older Objenesis JARs have an index that becomes invalid when AGP splits Java resources.
+    testRuntimeOnly(libs.objenesis)
     testImplementation(libs.assertj.core)
     testImplementation(libs.robolectric)
     testImplementation(libs.kotlinx.coroutines.test)
